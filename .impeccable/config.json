@@ -20,6 +20,15 @@
         ],
         "createdAt": "2026-08-08T21:31:15.778Z",
         "reason": "User confirmed: img src is built at runtime (Wikipedia portrait, ticker logo CDN) with onerror fallback to the drawn SVG art underneath"
+      },
+      {
+        "rule": "radial-halo",
+        "value": "*",
+        "files": [
+          "sentiment-lab/public/stock-game.html"
+        ],
+        "createdAt": "2026-08-08T22:53:06.276Z",
+        "reason": "User confirmed the epic/legendary card aura is a requested game feature"
       }
     ]
   }
