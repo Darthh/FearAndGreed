@@ -1,0 +1,26 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "dark-glow",
+        "value": "*",
+        "files": [
+          "sentiment-lab/public/stock-game.html"
+        ],
+        "createdAt": "2026-08-08T21:31:15.258Z",
+        "reason": "User confirmed the epic/legendary card aura is a requested game feature"
+      },
+      {
+        "rule": "broken-image",
+        "value": "*",
+        "files": [
+          "sentiment-lab/public/stock-game.html"
+        ],
+        "createdAt": "2026-08-08T21:31:15.778Z",
+        "reason": "User confirmed: img src is built at runtime (Wikipedia portrait, ticker logo CDN) with onerror fallback to the drawn SVG art underneath"
+      }
+    ]
+  }
+}
