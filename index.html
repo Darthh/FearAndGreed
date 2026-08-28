@@ -1,0 +1,1564 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Market Share — Financial Card Battler</title>
+<style>
+:root{
+  --void:#05070c; --obsidian:#0b1018; --slate:#121a26; --steel:#18222f;
+  --line:#25313f; --line2:#37485c;
+  --gold:#c9a227; --gold-lt:#f2dd8c; --brass:#8a6b26;
+  --bull:#2fd6a3; --bear:#e04b4b; --ink:#4d9fff; --arcane:#9d6bf0;
+  --txt:#dfe7f0; --dim:#7d8da0;
+  --serif:"Cinzel","Trajan Pro","Optima",Georgia,serif;
+  --mono:"JetBrains Mono","Cascadia Mono",Consolas,monospace;
+  --sans:"Inter","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:
+    radial-gradient(1200px 600px at 50% -10%,#12202e 0%,transparent 60%),
+    repeating-linear-gradient(0deg,transparent 0 3px,#ffffff05 3px 4px),
+    linear-gradient(#05070c,#080d15 40%,#05070c);
+  color:var(--txt);font:14px/1.45 var(--sans);min-height:100vh;overflow-x:hidden}
+button{font:inherit;cursor:pointer;border:none;border-radius:4px;color:inherit}
+#app{max-width:1460px;margin:0 auto;padding:10px}
+h1,h2,.serif{font-family:var(--serif);letter-spacing:2px}
+
+/* gilded frame helper: gradient border that keeps the radius */
+.gild{border:1px solid transparent;border-radius:8px;
+  background:linear-gradient(var(--slate),var(--obsidian)) padding-box,
+             linear-gradient(150deg,#3d4c60,#1b2430 45%,#3d4c60) border-box}
+
+/* ---------- setup screen ---------- */
+.setup{padding:26px 10px 40px;text-align:center}
+.setup h1{font-size:52px;color:var(--gold-lt);
+  text-shadow:0 2px 0 #000,0 0 1px var(--brass);margin-bottom:2px}
+.setup h1 span{color:var(--bull)}
+.rule{width:min(680px,90%);height:1px;margin:14px auto;
+  background:linear-gradient(90deg,transparent,var(--brass),var(--gold),var(--brass),transparent)}
+.setup .sub{color:var(--dim);margin-bottom:22px;font-size:13px}
+.leaders{display:grid;grid-template-columns:repeat(auto-fill,minmax(208px,1fr));gap:12px;
+  max-width:1320px;margin:0 auto}
+.leader{border:1px solid var(--line);border-radius:10px;padding:0 0 12px;text-align:left;
+  background:linear-gradient(180deg,var(--steel),var(--obsidian));transition:.15s;overflow:hidden;
+  position:relative}
+.leader:hover{border-color:var(--gold);transform:translateY(-3px)}
+.leader:hover .crest{filter:saturate(1.4)}
+.crest{height:74px;display:grid;place-items:center;
+  background:radial-gradient(circle at 50% 120%,#22303f,#0c1219);
+  border-bottom:1px solid var(--line)}
+/* the photograph sits on top of the drawn crest, in the same round frame */
+.portrait{position:relative;display:inline-block;flex:none}
+.portrait img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+  object-position:50% 22%;border-radius:50%;
+  border:1px solid var(--brass);box-shadow:0 0 0 2px rgba(201,162,39,.18)}
+.leader .body{padding:10px 12px 0}
+.leader .nm{font-family:var(--serif);font-size:15px;color:var(--gold-lt);letter-spacing:1px}
+.leader .co{color:var(--bull);font-family:var(--mono);font-size:10px;letter-spacing:2px;margin-bottom:8px}
+.leader .row{font-size:11px;color:var(--dim);margin-top:7px;line-height:1.35}
+.leader .row b{color:var(--gold);display:block;font-size:9px;letter-spacing:1.5px;font-weight:600}
+
+/* ---------- board ---------- */
+.hud{display:flex;justify-content:space-between;align-items:center;gap:10px;
+  border:1px solid var(--line);border-radius:6px;padding:5px 14px;margin-bottom:8px;font-size:11px;
+  background:linear-gradient(90deg,#0d1420,#141d2b,#0d1420);
+  font-family:var(--mono);letter-spacing:1px}
+.hud .brand{font-family:var(--serif);color:var(--gold-lt);letter-spacing:3px}
+#mus{background:none;border:1px solid var(--line2);border-radius:4px;color:var(--dim);
+  font-family:var(--mono);font-size:10px;letter-spacing:1px;padding:3px 8px;cursor:pointer}
+#mus:hover{color:var(--gold-lt);border-color:var(--gold)}
+/* the theme player: audible, off-screen, never interactive */
+#music{position:fixed;left:-9999px;bottom:0;width:200px;height:120px;border:0;opacity:.01;
+  pointer-events:none}
+.tape{color:var(--bull);overflow:hidden;white-space:nowrap;max-width:46%;text-overflow:ellipsis}
+.side{display:flex;align-items:center;gap:10px;padding:4px 0}
+.hero{width:132px;flex:none;border:1px solid var(--line2);border-radius:10px;padding:8px 8px 6px;
+  text-align:center;position:relative;
+  background:linear-gradient(180deg,#1a2534,#0b1018)}
+.hero:after{content:"";position:absolute;inset:3px;border:1px solid #ffffff0d;border-radius:7px;pointer-events:none}
+.hero.active{border-color:var(--gold);background:linear-gradient(180deg,#26303a,#0d1219)}
+.hero.tgt{border-color:var(--bear);cursor:crosshair}
+.hero .hn{font-family:var(--serif);font-size:11px;color:var(--gold-lt);letter-spacing:1px}
+.hero .hc{font-family:var(--mono);font-size:9px;color:var(--bull);letter-spacing:2px}
+.hero .port{margin:4px auto 2px}
+.vitals{display:flex;justify-content:center;gap:10px;align-items:baseline;margin-top:2px}
+.hp{color:var(--bull);font-weight:700;font-size:17px;font-family:var(--mono)}
+.hp.hurt{color:var(--bear)}
+.cap{color:var(--ink);font-family:var(--mono);font-size:12px}
+.pass{font-size:9px;color:var(--dim);margin-top:3px;line-height:1.25}
+.hpow{width:100%;margin-top:6px;padding:4px 2px;font-size:9px;letter-spacing:.5px;
+  border:1px solid var(--brass);border-radius:4px;
+  background:linear-gradient(180deg,#2a2413,#171b23)}
+.hpow:disabled{opacity:.3;cursor:default;border-color:var(--line)}
+.hpow.on{color:var(--gold-lt)}
+.hpow.on:hover{background:linear-gradient(180deg,#413516,#241f14)}
+.board{flex:1;min-height:150px;display:flex;gap:7px;align-items:center;justify-content:center;
+  border:1px solid var(--line);border-radius:10px;padding:8px;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 39px,#ffffff06 39px 40px),
+    repeating-linear-gradient(0deg,transparent 0 39px,#ffffff06 39px 40px),
+    radial-gradient(ellipse at 50% 50%,#12202c,#080c12)}
+.board.mine{background:
+    repeating-linear-gradient(90deg,transparent 0 39px,#c9a2270d 39px 40px),
+    repeating-linear-gradient(0deg,transparent 0 39px,#c9a2270d 39px 40px),
+    radial-gradient(ellipse at 50% 50%,#16222c,#080c12)}
+.empty{color:#33414f;font-family:var(--mono);font-size:10px;letter-spacing:2px}
+.hand{display:flex;gap:5px;justify-content:center;flex-wrap:wrap;min-height:196px;padding-top:12px}
+
+/* ---------- cards ---------- */
+.card{position:relative;flex:none;text-align:left;transition:transform .12s,filter .12s;
+  border:2px solid var(--line2);border-radius:9px;overflow:hidden;
+  background:linear-gradient(180deg,#1a2432,#0d1219 60%,#0a0e14)}
+.card .frame{position:absolute;inset:2px;border:1px solid #ffffff10;border-radius:6px;pointer-events:none}
+.card .cost{position:absolute;top:3px;left:3px;width:24px;height:24px;z-index:3;
+  display:grid;place-items:center;font-family:var(--mono);font-weight:700;font-size:13px;
+  color:#eaf4ff;background:radial-gradient(circle at 35% 30%,#5fb0ff,#1b4a86 70%,#0d2547);
+  border-radius:50%;border:1px solid #7fc2ff66}
+.card .tk{font-family:var(--mono);color:var(--gold-lt);font-size:9px;letter-spacing:2px;
+  text-align:center;padding:2px 0;background:linear-gradient(90deg,transparent,#c9a2271f,transparent);
+  border-top:1px solid #c9a22733;border-bottom:1px solid #c9a22733}
+.card .nm{font-family:var(--serif);font-weight:600;line-height:1.1;text-align:center;color:#f0f4f9}
+.card .ind{color:var(--dim);font-size:8px;text-transform:uppercase;letter-spacing:1.2px;text-align:center;
+  font-family:var(--mono)}
+.card .tx{color:#b9c6d6;font-size:9px;line-height:1.28;text-align:center;padding:0 5px}
+.card .kw{font-size:8px;color:var(--ink);text-transform:uppercase;letter-spacing:1px;text-align:center;
+  font-family:var(--mono)}
+.card .art{display:block;margin:0 auto}
+.card .stats{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:space-between;
+  font-family:var(--mono);font-weight:700;font-size:14px;padding:1px 5px 2px;z-index:3}
+.card .a{color:var(--gold-lt);text-shadow:0 1px 2px #000}
+.card .h{color:var(--bull);text-shadow:0 1px 2px #000}
+.card .h.dmg{color:var(--bear)}
+
+/* rarity frames — muted metal for the border, saturation saved for the corner gems */
+.rar-common{border-color:#39485a}
+.rar-rare{border-color:#2f5f92;
+  background:linear-gradient(180deg,#16283c,#0b131d 60%,#080d14)}
+.rar-epic{border-color:#5f3f96;
+  background:linear-gradient(180deg,#241a3a,#100c1c 60%,#0a0812)}
+.rar-epic .frame{border-color:#9d6bf033}
+.rar-legendary{border-color:#a8862a;
+  background:linear-gradient(180deg,#332a12,#15120a 55%,#0c0a06)}
+.rar-legendary .frame{border-color:#f2dd8c47}
+/* legendary corner gems */
+.rar-legendary:before,.rar-legendary:after{content:"";position:absolute;width:7px;height:7px;
+  background:linear-gradient(135deg,var(--gold-lt),var(--brass));transform:rotate(45deg);z-index:4}
+.rar-legendary:before{top:-1px;right:-1px}
+.rar-legendary:after{bottom:-1px;right:-1px}
+.rar-epic:before{content:"";position:absolute;top:-1px;right:-1px;width:6px;height:6px;z-index:4;
+  background:linear-gradient(135deg,#c9a9ff,#5b2fa8);transform:rotate(45deg)}
+
+/* hand cards */
+.card.hand-c{width:122px;height:196px;cursor:pointer;padding-top:24px}
+.card.hand-c .nm{font-size:11px;margin:3px 2px 1px}
+.card.hand-c .tx{margin-top:3px;padding-bottom:20px;max-height:48px;overflow:hidden}
+.card.hand-c:hover{transform:translateY(-18px) scale(1.05);z-index:5}
+/* affordance lives in the cost gem, not a ring around every card */
+.card.playable .cost{background:radial-gradient(circle at 35% 30%,#ffeaa8,#c9a227 68%,#7c5f14);
+  color:#2b2005;border-color:#f2dd8c}
+.card.dead-cost{filter:grayscale(.75) brightness(.55)}
+
+/* board minions */
+.minion{width:100px;height:128px;cursor:default;padding-top:3px}
+.minion .nm{font-size:9.5px;margin:1px}
+.minion.ready{cursor:pointer}
+.minion.ready:after{content:"";position:absolute;left:10px;right:10px;bottom:2px;height:3px;
+  border-radius:2px;background:linear-gradient(90deg,transparent,var(--bull),transparent)}
+.minion.ready:hover{transform:translateY(-4px)}
+.minion.picked{border-color:var(--gold-lt);transform:translateY(-10px)}
+.minion.picked:after{background:linear-gradient(90deg,transparent,var(--gold-lt),transparent)}
+.minion.tgt{border-color:var(--bear);cursor:crosshair}
+.minion.tgt .frame{border-color:#e04b4b66}
+.minion.taunt{border-width:4px;border-color:#8a6b26;border-style:double}
+.minion.shield .frame{border:2px solid #7fd7ffaa;inset:1px}
+.minion.sickly{filter:brightness(.72) saturate(.7)}
+
+.bar{display:flex;gap:8px;align-items:center;justify-content:center;margin:8px 0 2px}
+#end{font-family:var(--serif);letter-spacing:2px;font-weight:700;padding:11px 30px;
+  color:#04180f;background:linear-gradient(180deg,#4ff0bd,#1d9c76);border:1px solid #7ff5d3}
+#end:disabled{background:linear-gradient(180deg,#243040,#161d27);color:#4d5c6e;border-color:var(--line)}
+#cancel{padding:11px 18px;background:linear-gradient(180deg,#8c2b2b,#521717);border:1px solid #c05252}
+.log{height:82px;overflow-y:auto;border:1px solid var(--line);border-radius:6px;
+  padding:6px 12px;font-size:10.5px;color:var(--dim);font-family:var(--mono);
+  background:linear-gradient(#080d14,#0b1119)}
+.log b{color:var(--gold-lt)}
+.log div:first-child{color:var(--txt)}
+.deckinfo{font-family:var(--mono);font-size:8px;color:#5c6b7e;text-align:center;width:44px;flex:none;
+  letter-spacing:1px;line-height:1.15}
+.deckinfo .n{font-size:15px;color:var(--gold-lt);font-weight:700;margin-top:5px}
+.hud{max-width:1250px;margin:0 auto 8px}
+.bar,.hint{max-width:1250px;margin-left:auto;margin-right:auto}
+.log{max-width:1250px;margin:0 auto}
+.hand{max-width:1250px;margin:0 auto}
+.over{position:fixed;inset:0;background:#000000d9;display:grid;place-items:center;z-index:9}
+.over div{text-align:center;padding:38px 56px;border-radius:12px;border:1px solid var(--gold);
+  background:linear-gradient(180deg,#1b1a10,#0a0c10)}
+.over h2{font-size:32px;color:var(--gold-lt);margin-bottom:8px}
+.hint{text-align:center;color:var(--gold);font-size:11px;height:16px;font-family:var(--mono);letter-spacing:2px}
+.keys{max-width:900px;margin:26px auto 0;font-size:11px;color:var(--dim);line-height:1.9}
+.keys b{color:var(--gold-lt);font-family:var(--mono);letter-spacing:1px}
+
+/* ---------- the arena: a financial district at night ---------- */
+/* the sky brightens toward the horizon (58%) so the towers read as silhouettes against it */
+#sky{position:fixed;inset:0;z-index:-2;overflow:hidden;
+  background:linear-gradient(180deg,
+    #02040a 0%,#050f1c 24%,#0b2438 42%,#1a4664 52%,#2d6480 57%,
+    #16394f 61%,#0d2233 68%,#081522 78%,#050a12 100%)}
+#sky .stars{position:absolute;top:0;left:0;width:100%;height:44%}
+/* the horizon sits mid-screen: towers rise behind the table, the floor darkens below it */
+#sky .city{position:absolute;left:50%;bottom:42%;width:126%;height:auto;transform:translateX(-50%)}
+/* darkening must begin BELOW the horizon (58% from top) or it erases the skyline */
+#sky:after{content:"";position:absolute;inset:0;
+  background:
+    linear-gradient(180deg,#04070c00 59%,#050a1259 69%,#050a12b8 82%,#050a12 96%),
+    radial-gradient(ellipse 94% 82% at 50% 40%,#04070c00 45%,#04070c99 100%)}
+.beacon{animation:beacon 3.4s ease-in-out infinite}
+@keyframes beacon{0%,64%,100%{opacity:.22}72%,86%{opacity:1}}
+.flick{animation:flick 9s steps(1) infinite}
+@keyframes flick{0%,88%{opacity:.7}90%,94%{opacity:.06}96%{opacity:.7}}
+body{background:none}
+
+/* the table: a lit trading floor set into the city */
+.arena{max-width:1250px;margin:0 auto;padding:8px 16px 12px;border-radius:16px;position:relative;
+  background:linear-gradient(180deg,#0a1421f5,#060c14fa);
+  border:1px solid #2b3a4d;
+  box-shadow:0 40px 90px -40px #000,0 0 0 1px #ffffff08 inset}
+.arena:before{content:"";position:absolute;left:22px;right:22px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--brass),var(--gold),var(--brass),transparent)}
+.midline{display:flex;align-items:center;gap:12px;padding:0 4px;
+  font-family:var(--mono);font-size:9px;letter-spacing:3px;color:#4a5c72}
+.midline:before,.midline:after{content:"";flex:1;height:1px;
+  background:linear-gradient(90deg,transparent,#2b3a4d,transparent)}
+.board{
+  background:
+    repeating-linear-gradient(90deg,transparent 0 39px,#ffffff07 39px 40px),
+    linear-gradient(180deg,#0d1a26,#080f18);
+  box-shadow:inset 0 2px 10px -4px #000c}
+.board.mine{
+  background:
+    repeating-linear-gradient(90deg,transparent 0 39px,#c9a22714 39px 40px),
+    linear-gradient(180deg,#111c26,#090f16);
+  border-color:#3c3524}
+.hud,.log{backdrop-filter:blur(6px)}
+.hero{box-shadow:0 14px 30px -20px #000}
+
+/* ---------- motion layer ---------- */
+#fx{position:fixed;inset:0;z-index:60;pointer-events:none;overflow:hidden}
+.ghost{position:fixed;pointer-events:none;will-change:transform,opacity;z-index:1}
+.ghost>*{margin:0!important;transform:none!important;width:100%;height:100%}
+.ghost.flying>*{box-shadow:0 26px 60px -18px #000e,0 0 0 1px #c9a22755}
+/* the figure is the message: it outranks every ghost and stays legible over card art */
+.fignum{position:fixed;z-index:3;font-family:var(--mono);font-weight:700;font-size:36px;
+  letter-spacing:-2px;will-change:transform,opacity;-webkit-text-stroke:4px #05080d;
+  paint-order:stroke fill}
+.fignum.dmg{color:#ff7063}
+.fignum.heal{color:#5cf0bb}
+.shock{position:fixed;z-index:2;width:46px;height:46px;border-radius:50%;
+  border:3px solid #ff7063;will-change:transform,opacity}
+
+@media (prefers-reduced-motion: reduce){
+  .beacon,.flick{animation:none}
+  .card.hand-c:hover{transform:none}
+}
+@media (max-width:900px){
+  .hand{min-height:0}
+  .card.hand-c{width:100px;height:158px}
+  .card.hand-c .tx{display:none}
+  .minion{width:82px;height:110px}
+  .hero{width:104px}
+  .hud .tape{display:none}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+/* ============================================================
+   MARKET SHARE — Hearthstone-style rules, financial skin.
+   Market Cap = health (30). Capital = mana (ramps 1→10).
+   Minions = NASDAQ-100 companies. Spells = market events.
+   ============================================================ */
+
+const rnd = a => a[Math.floor(Math.random()*a.length)];
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ---------- card constructors ---------- */
+let _id=0;
+const C=(nm,tk,cost,atk,hp,ind,rar,tx,x={})=>({type:'minion',nm,tk,cost,atk,hp,ind,rar,tx,...x});
+const S=(nm,cost,rar,tx,x={})=>({type:'spell',nm,tk:'EVENT',cost,ind:'Market',rar,tx,...x});
+
+/* ============================================================
+   CARD ART — procedural crests.
+   Real company logos are trademarked and would need external
+   requests, so each card gets a deterministic sigil instead:
+   industry glyph + ticker-seeded palette + ticker monogram.
+   ============================================================ */
+const hash=s=>{let h=2166136261;for(const ch of s){h^=ch.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;};
+
+/* ============================================================
+   BRAND MARKS — hand-authored SVG on a 0..100 box.
+   Geometric marks are drawn as paths; brands whose real identity
+   IS a wordmark get a wordmark plate in their brand color.
+   [fill, pathData, strokeWidth?]  — strokeWidth means stroke, no fill.
+   ============================================================ */
+const LOGO={
+ AAPL:[['#f5f5f7','M71 55c0-9 5-13 6-15-3-5-8-6-10-6-5-1-10 3-12 3s-6-3-11-3c-6 0-12 4-15 10-6 11-2 27 4 36 3 4 6 9 11 9 4 0 6-3 11-3s7 3 11 3c5 0 8-5 11-9 2-4 3-6 4-9-7-3-10-9-10-16z'],
+        ['#f5f5f7','M58 27c3-3 5-8 4-13-4 0-9 3-12 7-2 3-4 8-4 12 4 0 9-3 12-6z']],
+ MSFT:[['#f25022','M14 14h34v34H14z'],['#7fba00','M52 14h34v34H52z'],
+       ['#00a4ef','M14 52h34v34H14z'],['#ffb900','M52 52h34v34H52z']],
+ GOOGL:[['#4285f4','M50 44h38c1 4 1 7 1 11 0 22-15 39-39 39v-16c13 0 23-9 25-20H50z'],
+        ['#34a853','M24 58l-13 10c7 14 22 24 39 24 11 0 20-4 27-10L64 70c-4 3-9 5-14 5-11 0-21-7-26-17z'],
+        ['#fbbc05','M11 32C7 40 7 54 11 68l13-10c-2-6-2-12 0-18z'],
+        ['#ea4335','M50 21c8 0 15 3 20 8l12-12C74 9 63 5 50 5 33 5 18 15 11 32l13 10c5-11 15-21 26-21z']],
+ AMZN:[['#ff9900','M14 70c19 13 50 13 68 1',7],['#ff9900','M78 78l10-8 1 13z']],
+ META:[['#0081fb','M24 50c0-12 6-21 14-21 13 0 17 42 30 42 8 0 14-9 14-21s-6-21-14-21c-13 0-17 42-30 42-8 0-14-9-14-21z',10]],
+ NVDA:[['#76b900','M14 50c9-13 21-19 36-19 16 0 28 8 28 19s-12 19-28 19c-15 0-27-6-36-19zm34-11c-11 0-19 5-19 11s8 11 19 11 19-5 19-11-8-11-19-11z']],
+ TSLA:[['#e82127','M50 20c-16 0-31 4-31 4l4 9s12-3 15-3l4 5v45h16V35l4-5c3 0 15 3 15 3l4-9s-15-4-31-4z']],
+ NFLX:[['#e50914','M30 8h17l23 62V8h17v84H70L47 32v60H30z']],
+ AMD:[['#ed1c24','M22 74L60 22h20L42 74z'],['#ed1c24','M62 22h18v18z'],['#ed1c24','M20 22h26L20 58z']],
+ INTC:[['#0068b5','M50 12a38 38 0 100 76 38 38 0 100-76z'],
+       ['#fff','M44 44h12v30H44z'],['#fff','M50 28a7 7 0 100 14 7 7 0 100-14z']],
+ ADBE:[['#ed1c24','M40 12L8 88h19l7-18h17l-8-20h-2z'],['#ed1c24','M60 12l32 76H72L50 34z']],
+ CSCO:[['#049fd9','M20 56h5v12h-5zM32 46h5v22h-5zM44 34h5v34h-5zM56 46h5v22h-5zM68 56h5v12h-5z'],
+       ['#049fd9','M22.5 44a2.5 2.5 0 100 5 2.5 2.5 0 100-5zM34.5 34a2.5 2.5 0 100 5 2.5 2.5 0 100-5zM46.5 22a2.5 2.5 0 100 5 2.5 2.5 0 100-5zM58.5 34a2.5 2.5 0 100 5 2.5 2.5 0 100-5zM70.5 44a2.5 2.5 0 100 5 2.5 2.5 0 100-5z']],
+ PEP:[['#004b93','M50 12a38 38 0 100 76 38 38 0 100-76z'],
+      ['#ee3124','M13 45a38 38 0 0174-7c-21-11-53-8-74 7z'],
+      ['#fff','M13 45c21-15 53-18 74-7-1 5-2 9-4 13-20-11-50-8-69 3-1-3-1-6-1-9z']],
+ SBUX:[['#00704a','M50 8a42 42 0 100 84 42 42 0 100-84zm0 11a31 31 0 110 62 31 31 0 110-62z'],
+       ['#00704a','M50 30a20 20 0 100 40 20 20 0 100-40z'],
+       ['#fff','M40 46h20l-4 6h-12zM44 56h12l-3 6h-6z']],
+ PYPL:[['#003087','M24 16h26c15 0 23 9 21 23-3 14-13 21-27 21h-9l-4 24H16z'],
+       ['#009cde','M40 30h20c13 0 19 8 17 20-2 13-11 20-24 20h-8l-4 18H32z']],
+ COIN:[['#0052ff','M50 10a40 40 0 100 80 40 40 0 100-80zm-13 30h26v20H37z']],
+ ZM:[['#4a8cff','M12 16h76a8 8 0 018 8v52a8 8 0 01-8 8H12a8 8 0 01-8-8V24a8 8 0 018-8z'],
+     ['#fff','M24 36h30a6 6 0 016 6v16a6 6 0 01-6 6H24a6 6 0 01-6-6V42a6 6 0 016-6z'],
+     ['#fff','M64 47l14-11v28L64 53z']],
+ DASH:[['#ff3008','M10 34h50c17 0 25 19 13 31-5 5-11 7-17 7H10l13-15h34c5 0 7-6 3-9-1-1-3-1-4-1H23z']],
+ ABNB:[['#ff5a5f','M50 14c6 0 10 5 14 13 8 15 16 32 16 40 0 10-7 17-16 17-6 0-11-3-14-8-3 5-8 8-14 8-9 0-16-7-16-17 0-8 8-25 16-40 4-8 8-13 14-13zm0 12c-3 0-6 4-9 11-6 12-11 24-11 29 0 5 3 8 8 8 4 0 8-4 12-11 4 7 8 11 12 11 5 0 8-3 8-8 0-5-5-17-11-29-3-7-6-11-9-11z']],
+ CMCSA:[['#000','M50 8a42 42 0 100 84 42 42 0 100-84z'],
+        ['#fff','M32 30l36 40h-12L32 42zM68 30L32 70h12l24-28z']],
+ HOOD:[['#00c805','M46 88V26c0-9 7-14 16-14 4 0 8 1 11 3l-6 11c-2-1-3-2-5-2-3 0-5 2-5 5v59z'],
+       ['#00c805','M30 88V44c0-6 4-10 10-10h6v54z']],
+ MRNA:[['#d92d20','M14 66c0-24 11-38 26-38 10 0 16 6 20 15 4-9 10-15 20-15 6 0 6 8 0 8-9 0-14 9-17 20l-4 14h-9l-5-16c-2-8-6-13-11-13-8 0-13 9-13 25z']],
+ LULU:[['#d31334','M50 12c17 0 30 13 30 30 0 13-7 22-18 27l6 19H62l-8-24c9-2 16-10 16-22 0-13-9-22-20-22s-20 9-20 22c0 12 7 20 16 22l-8 24H32l6-19c-11-5-18-14-18-27 0-17 13-30 30-30z']],
+ EBAY:[['#e53238','M14 52c0-10 7-16 16-16s15 6 15 16v3H22c1 6 4 9 9 9 4 0 6-2 7-5h7c-1 8-7 12-14 12-10 0-17-7-17-19zm8-3h15c-1-5-4-8-7-8s-7 3-8 8z'],
+       ['#0064d2','M48 26h7v18c3-4 7-6 12-6 9 0 15 7 15 18s-6 19-15 19c-5 0-9-2-12-6v5h-7zm18 43c5 0 9-4 9-12s-4-12-9-12-9 4-9 12 4 12 9 12z']],
+ AVGO:[['#cc0000','M50 16c20 0 34 14 34 34S70 84 50 84 16 70 16 50s14-34 34-34zm0 11c-13 0-23 10-23 23s10 23 23 23 23-10 23-23-10-23-23-23z'],
+       ['#cc0000','M50 36c8 0 14 6 14 14s-6 14-14 14-14-6-14-14 6-14 14-14z']],
+ QCOM:[['#3253dc','M50 12c21 0 37 16 37 38 0 21-16 38-37 38S13 71 13 50c0-22 16-38 37-38zm0 13c-13 0-23 11-23 25s10 25 23 25 23-11 23-25-10-25-23-25z'],
+       ['#3253dc','M58 66l18 16-9 10-18-16z']],
+ TXN:[['#cc0000','M50 10a40 40 0 100 80 40 40 0 100-80z'],
+      ['#fff','M22 38h30v9H42v25h-10V47H22z'],['#fff','M58 38h10v34H58z']],
+ MU:[['#0060a9','M14 76V26h14l10 26 10-26h14v50H50V46l-8 22h-8l-8-22v30z'],
+     ['#0060a9','M66 26h12v30c0 6 3 9 8 9v12c-13 0-20-7-20-21z']],
+};
+/* brands whose identity is a wordmark: ticker plate in brand color */
+const WM={
+ COST:'#005dab', ASML:'#0b5fa5', EA:'#000000', INTU:'#365ebf', NDAQ:'#0092bc', ARM:'#0091bd',
+ MRVL:'#00a3e0', AMAT:'#f36f21', LRCX:'#0067b1', KLAC:'#0b5aa1', PANW:'#fa582d', CRWD:'#e01a2b',
+ AMGN:'#0063c3', GILD:'#c8102e', VRTX:'#00857c', ISRG:'#0072ce', BKNG:'#003580', MELI:'#ffe600',
+ PDD:'#e02e24', TMUS:'#e20074', CHTR:'#0099d8', ADP:'#d0271d', SNPS:'#004b87', CDNS:'#00a1e0',
+ PLTR:'#101113', TTD:'#0099e5', JD:'#d71518', BIDU:'#2932e1', NTES:'#c8102e', ORLY:'#00703c',
+ MNST:'#a1d302', WDC:'#0053a0', STX:'#6ebe4a', MCHP:'#e4002b', ON:'#7b2c8a', SWKS:'#0071ce',
+ HON:'#e4002b', CSX:'#003a5d', XEL:'#0072ce', EXC:'#00539b', PAYX:'#0b3d91', CME:'#00553f',
+ TTWO:'#f04a23', MTCH:'#e50a5c', SIRI:'#005dab', ROST:'#003da5', DLTR:'#00953b', ULTA:'#e75480',
+ EXPE:'#ffc94d', OKTA:'#007dc1', DOCU:'#ffcc22', CDW:'#e4002b', CTSH:'#0033a1',
+ VRSN:'#e35b2d', NTAP:'#0067c5', AKAM:'#0099cc', ANSS:'#ffb71b', ILMN:'#f57c20', BIIB:'#00539b',
+ AZN:'#d0006f', GEHC:'#0057a8', ALGN:'#00a3e0', DXCM:'#00857c', IDXX:'#00539b', MDLZ:'#5c2d91',
+ KHC:'#e4002b', KDP:'#a6192e', FAST:'#0053a0', CPRT:'#0b5aa1', ODFL:'#c8102e', PCAR:'#003a70',
+ CTAS:'#00447c', ROP:'#003a5d', BKR:'#00b2a9', FANG:'#005596', DDOG:'#632ca6', TEAM:'#0052cc',
+ IBKR:'#d81222', MAR:'#a01c33', WDAY:'#0875e1', FTNT:'#ee3124', ZS:'#0075be', SMCI:'#0b5aa1',
+ APP:'#00c08b', GFS:'#0b3d91', TER:'#c8102e', LI:'#00b0f0', LCID:'#1a1a1a', RIVN:'#5a9c3c',
+ TCOM:'#2577e3', WBD:'#0b1c2c', ADI:'#0067b5', NXPI:'#00a1de', ADSK:'#0696d7', VRSK:'#003a5d',
+ CSGP:'#0b3d91', JBHT:'#f2a900', CEG:'#00a0df', REGN:'#0057a8', MPWR:'#00539b', ZM2:'#4a8cff',
+};
+
+/* [fillPaths, strokePaths] on an 80x80 viewBox */
+const GLYPH={
+ Semis:['M28 28h24v24H28zM34 34h12v12H34z',
+        'M40 12v14M40 68v-14M12 40h14M68 40h-14M28 12v10M52 12v10M28 68v-10M52 68v-10M12 28h10M12 52h10M68 28h-10M68 52h-10'],
+ Tech:['M40 14l22 13v26L40 66 18 53V27z',
+       'M40 26l12 7v14l-12 7-12-7V33zM40 14v12M62 27L52 33M62 53L52 47M40 66V54M18 53l10-6M18 27l10 6'],
+ Consumer:['M22 32h36l-4 34H26zM30 44h4v8h-4zM46 44h4v8h-4z',
+           'M31 32v-6a9 9 0 0118 0v6'],
+ Health:['M34 16h12v18h18v12H46v18H34V46H16V34h18z',
+         'M8 62h10l5-10 6 20 6-14 4 6h27'],
+ Finance:['M24 40h9v24h-9zM48 26h9v26h-9z',
+          'M28.5 32v8M28.5 64v6M52.5 18v8M52.5 52v8M14 68h52'],
+ Media:['M33 27l22 13-22 13z',
+        'M40 12a28 28 0 100 56 28 28 0 100-56M14 22C8 30 8 50 14 58M66 22c6 8 6 28 0 36'],
+ Industrial:['M40 16l5 6h8l1 8 7 4-3 8 5 6-6 6 1 8-8 2-3 8-7-3-7 3-3-8-8-2 1-8-6-6 5-6-3-8 7-4 1-8h8zM40 32a8 8 0 100 16 8 8 0 100-16',
+             ''],
+ Market:['M62 20h10v10zM20 58l12-16 10 8 20-26 6 5-25 33-10-8-9 12z',
+         'M10 68h60M10 68V14'],
+};
+const HUE={Semis:186,Tech:212,Consumer:38,Health:150,Finance:48,Media:286,Industrial:20,Market:0};
+const RARC={common:'#5c6c80',rare:'#4d9fff',epic:'#a97bf5',legendary:'#e8cf7a'};
+
+/* readable text on a brand plate: whichever of ink/paper actually wins on contrast.
+   Relative luminance, not the old brightness heuristic — mid-tone brands like
+   Marvell cyan read at 2.9:1 on white and 7.6:1 on black. */
+const relLum=hex=>{
+  const n=parseInt(hex.length===4?hex.slice(1).replace(/./g,c=>c+c):hex.slice(1),16);
+  return [n>>16&255,n>>8&255,n&255]
+    .map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;})
+    .reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0);
+};
+const onBrand=hex=>{
+  const L=relLum(hex);
+  return (L+.05)/.05 > 1.05/(L+.05) ? '#0b0d10' : '#ffffff';
+};
+
+function art(c,size){
+  const h=hash(c.tk+c.nm), ind=GLYPH[c.ind]?c.ind:'Market';
+  const [fill,stroke]=GLYPH[ind];
+  const base=HUE[ind], hue=(base+(h%40)-20+360)%360;   // per-ticker tint inside the industry family
+  const sat=42+(h>>>7)%28, rot=(h>>>3)%4;              // unsigned: h can exceed 2^31
+  const c1=`hsl(${hue} ${sat}% 62%)`, c2=`hsl(${(hue+34)%360} ${sat}% 34%)`, dark=`hsl(${hue} 45% 8%)`;
+  const gid='g'+(h%99991), leg=c.rar==='legendary', epic=c.rar==='epic';
+  const mono=(c.tk||'??').slice(0,2);
+  const paths=LOGO[c.tk], plate=!paths&&WM[c.tk];
+
+  /* the mark itself: real logo path, brand wordmark plate, or industry sigil */
+  const mark = paths
+    ? `<g transform="translate(16 12) scale(.48)">${paths.map(([f,d,w])=>w
+        ? `<path d="${d}" fill="none" stroke="${f}" stroke-width="${w}" stroke-linecap="round"/>`
+        : `<path d="${d}" fill="${f}" fill-rule="evenodd"/>`).join('')}</g>`
+    : plate
+    ? `<g><rect x="9" y="24" width="62" height="30" rx="5" fill="${plate}" stroke="#00000055"/>
+       <text x="40" y="45" text-anchor="middle" font-family="Helvetica,Arial,sans-serif"
+         font-size="${c.tk.length>4?14:18}" font-weight="700" letter-spacing="${c.tk.length>4?0:1}"
+         fill="${onBrand(plate)}">${c.tk}</text></g>`
+    : `<g fill="url(#${gid}f)" stroke="${c1}" stroke-width="2" stroke-linecap="round"
+         stroke-linejoin="round" fill-rule="evenodd">
+        <path d="${fill}" stroke="none"/>${stroke?`<path d="${stroke}" fill="none"/>`:''}</g>`;
+
+  const backs=[
+    `<circle cx="40" cy="40" r="30" fill="none" stroke="${c2}" stroke-width="1.5"/>`,
+    `<rect x="12" y="12" width="56" height="56" rx="4" fill="none" stroke="${c2}" stroke-width="1.5"/>`,
+    `<path d="M40 8l28 16v32L40 72 12 56V24z" fill="none" stroke="${c2}" stroke-width="1.5"/>`,
+    `<circle cx="40" cy="40" r="31" fill="none" stroke="${c2}" stroke-width="1" stroke-dasharray="4 3"/>`];
+  return `<svg class="art" width="${size}" height="${size}" viewBox="0 0 80 80" aria-hidden="true">
+    <defs>
+      <radialGradient id="${gid}b" cx="50%" cy="38%">
+        <stop offset="0" stop-color="hsl(${hue} ${sat}% 22%)"/><stop offset="1" stop-color="${dark}"/>
+      </radialGradient>
+      <linearGradient id="${gid}f" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="${c1}"/><stop offset="1" stop-color="${c2}"/>
+      </linearGradient>
+    </defs>
+    <rect width="80" height="80" rx="6" fill="url(#${gid}b)"/>
+    ${leg?`<g opacity=".5">${[...Array(12)].map((_,i)=>
+      `<path d="M40 40 L${40+38*Math.cos(i*Math.PI/6)} ${40+38*Math.sin(i*Math.PI/6)}"
+        stroke="${c1}" stroke-width="${i%2?1:3}" opacity=".35"/>`).join('')}</g>`:''}
+    ${plate?'':backs[rot]}
+    ${mark}
+    ${plate?'':`<rect x="0" y="60" width="80" height="20" fill="#000" opacity=".45"/>
+    <text x="40" y="75" text-anchor="middle" font-family="monospace" font-size="15"
+      font-weight="700" fill="${RARC[c.rar]}" letter-spacing="2">${mono}</text>`}
+    <rect width="80" height="80" rx="6" fill="none" stroke="${RARC[c.rar]}"
+      stroke-width="${leg?2.5:epic?2:1}" opacity="${leg?.95:.6}"/>
+  </svg>`;
+}
+
+/* ============================================================
+   THE ARENA — a financial district at night, generated once.
+   Three depth layers of towers, lit windows, haze on the horizon.
+   ============================================================ */
+function skyline(){
+  let s=20260808;
+  const R=()=>((s=Math.imul(s,48271)%2147483647)>>>0)/2147483647;
+  const W=1600,H=520,horizon=H;
+  /* back to front: distant towers wash out into haze, near towers go near-black */
+  const layers=[
+    {fill:'#25506e',from:170,to:290,w:[46,96], lit:'#b9dcf5',op:.32,gap:14,dens:.26},
+    {fill:'#0c2033',from:220,to:370,w:[54,112],lit:'#e8c46a',op:.62,gap:12,dens:.34},
+    {fill:'#01060c',from:260,to:440,w:[74,150],lit:'#ffd98a',op:.9, gap:20,dens:.26},
+  ];
+  const city=layers.map((L,li)=>{
+    let out='',x=-60;
+    while(x<W+60){
+      const w=L.w[0]+R()*(L.w[1]-L.w[0]);
+      const hh=L.from+R()*(L.to-L.from);
+      const top=horizon-hh;
+      out+=`<rect x="${x|0}" y="${top|0}" width="${w|0}" height="${(hh+8)|0}" fill="${L.fill}"/>`;
+      if(R()<.4){ // Art Deco setback + mast: the financial-district tell
+        const cw=Math.max(14,w*.46);
+        out+=`<rect x="${(x+(w-cw)/2)|0}" y="${(top-30)|0}" width="${cw|0}" height="32" fill="${L.fill}"/>`;
+        if(li>0&&R()<.55)
+          out+=`<rect x="${(x+w/2-2)|0}" y="${(top-72)|0}" width="4" height="44" fill="${L.fill}"/>
+            <circle cx="${(x+w/2)|0}" cy="${(top-74)|0}" r="3" fill="#e2554d" class="beacon"
+              style="animation-delay:${(R()*3).toFixed(1)}s"/>`;
+      }
+      const cols=Math.max(2,Math.floor(w/16)), rows=Math.floor(hh/20);
+      for(let r=0;r<rows;r++)for(let k=0;k<cols;k++){
+        if(R()>L.dens)continue;
+        const wx=x+9+k*((w-16)/cols), wy=top+16+r*19;
+        if(wy>horizon-10)continue;
+        out+=`<rect x="${wx|0}" y="${wy|0}" width="5" height="8" fill="${L.lit}"
+          opacity="${(L.op*(.45+R()*.55)).toFixed(2)}"${li===2&&R()<.04
+            ?` class="flick" style="animation-delay:${(R()*7).toFixed(1)}s"`:''}/>`;
+      }
+      x+=w+L.gap*(.3+R());
+    }
+    return `<g>${out}</g>`;
+  }).join(`<rect y="0" width="${W}" height="${H}" fill="url(#haze)"/>`);
+
+  const stars=`<svg class="stars" viewBox="0 0 1000 400" preserveAspectRatio="none" aria-hidden="true">
+    <circle cx="798" cy="72" r="19" fill="#e8eef7" opacity=".9"/>
+    <circle cx="789" cy="65" r="19" fill="#060e18"/>
+    ${[...Array(110)].map(()=>`<circle cx="${(R()*1000)|0}" cy="${(R()*380)|0}"
+      r="${R()<.86?'.9':'1.7'}" fill="#cfe0f2" opacity="${(.12+R()*.55).toFixed(2)}"/>`).join('')}
+  </svg>`;
+
+  return stars+`<svg class="city" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMax meet"
+      aria-hidden="true" focusable="false">
+    <defs>
+      <linearGradient id="haze" x1="0" y1="0" x2="0" y2="1">
+        <stop offset=".45" stop-color="#1d3b52" stop-opacity="0"/>
+        <stop offset="1" stop-color="#1d3b52" stop-opacity=".5"/>
+      </linearGradient>
+      <linearGradient id="glow" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#c98a3a" stop-opacity="0"/>
+        <stop offset="1" stop-color="#c98a3a" stop-opacity=".34"/>
+      </linearGradient>
+    </defs>
+    ${city}
+    <rect y="${H-120}" width="${W}" height="120" fill="url(#glow)"/>
+  </svg>`;
+}
+let SKY='';   /* generated once — the city does not reshuffle between renders */
+
+/* leader crest — a real photograph over the procedural mark.
+   Portraits come from Wikipedia's own summary API rather than a hardcoded
+   list of image URLs: the API tracks whichever picture the article currently
+   uses, so the photos stay right without us maintaining them. Anyone the API
+   has no free-licensed picture for keeps the drawn crest, which is also what
+   shows while the fetch is in flight and when it's offline. */
+const PHOTO = (()=>{ try{ return JSON.parse(localStorage.getItem('mktshare.photos')||'{}'); }catch{ return {}; } })();
+
+function loadPhotos(){
+  const need = LEADERS.filter(l=>!(l.nm in PHOTO));
+  if(!need.length || typeof fetch==='undefined') return;
+  Promise.all(need.map(l=>
+    fetch('https://en.wikipedia.org/api/rest_v1/page/summary/'+encodeURIComponent(l.wiki.replace(/ /g,'_')))
+      .then(r=>r.json())
+      .then(j=>{ PHOTO[l.nm] = (j.thumbnail&&j.thumbnail.source) || ''; })
+      .catch(()=>{ PHOTO[l.nm]=''; })
+  )).then(()=>{
+    try{ localStorage.setItem('mktshare.photos',JSON.stringify(PHOTO)); }catch{}
+    if(Object.values(PHOTO).some(Boolean)) render();   // swap the drawings for faces
+  });
+}
+
+function crest(L,size){
+  const c={tk:L.tk,nm:L.nm,ind:L.ind,rar:'legendary'};
+  const src=PHOTO[L.nm];
+  if(!src) return art(c,size);
+  // The drawing stays underneath: if the image 404s the <img> removes itself
+  // and the crest is already there, so a broken URL is never a hole.
+  return `<span class="portrait" style="width:${size}px;height:${size}px">${art(c,size)}`
+    + `<img src="${src}" alt="${L.nm}" loading="lazy" onerror="this.remove()"></span>`;
+}
+
+/* effect helpers */
+const dmg=(t,n,g)=>{ if(n<=0)return;
+  if(t.isHero){ t.p.hp-=n; fx({t:'dmg',key:keyOf(t),n}); return; }
+  if(t.shield){t.shield=false;log(`${t.nm} hedge absorbs the hit`);return;}
+  t.hp-=n; fx({t:'dmg',key:keyOf(t),n}); };
+const heal=(t,n)=>{ if(n<=0)return;
+  const before=t.isHero?t.p.hp:t.hp;
+  if(t.isHero){t.p.hp=Math.min(t.p.maxHp,t.p.hp+n);} else t.hp=Math.min(t.maxHp,t.hp+n);
+  const got=(t.isHero?t.p.hp:t.hp)-before;
+  if(got>0)fx({t:'heal',key:keyOf(t),n:got}); };
+const hurt=(p,n)=>dmg({isHero:1,p},n);
+const summon=(p,def,n=1)=>{for(let i=0;i<n;i++){ if(p.board.length>=7)return; p.board.push(mk(def)); }};
+const TOK={
+  cloud:C('Cloud Instance','AZR',0,1,1,'Tech','common','Token.'),
+  ful:C('Fulfillment Ctr','FBA',0,2,1,'Consumer','common','Token.'),
+  bot:C('Trading Bot','ALGO',0,1,2,'Finance','common','Token.',{kw:['Charge']}),
+  fab:C('Foundry Line','FAB',0,0,4,'Semis','common','Token.',{kw:['Taunt']}),
+  retail:C('Retail Trader','WSB',0,1,1,'Finance','common','Token.',{kw:['Charge']}),
+};
+
+/* ---------- THE CARD POOL: 58 NASDAQ-100 companies + 14 events ---------- */
+const POOL=[
+/* ===== LEGENDARY ===== */
+C('NVIDIA','NVDA',9,10,10,'Semis','legendary','Battlecry: Give your other Semis minions +2/+2.',
+  {bc:(me)=>me.board.forEach(m=>{if(m.ind==='Semis'){m.atk+=2;m.hp+=2;m.maxHp+=2;}})}),
+C('Apple','AAPL',8,8,8,'Consumer','legendary','Battlecry: Restore 6 Market Cap to your leader.',
+  {bc:(me)=>heal({isHero:1,p:me},6)}),
+C('Microsoft','MSFT',8,7,9,'Tech','legendary','Battlecry: Draw 2 cards.',{bc:(me)=>{draw(me);draw(me);}}),
+C('Alphabet','GOOGL',7,7,7,'Tech','legendary','Battlecry: Deal 3 damage to a minion.',
+  {tgt:'minion',bc:(me,op,t)=>t&&dmg(t,3)}),
+C('Amazon','AMZN',7,5,7,'Consumer','legendary','Battlecry: Summon two 2/1 Fulfillment Centers.',
+  {bc:(me)=>summon(me,TOK.ful,2)}),
+C('Meta Platforms','META',6,6,6,'Media','legendary','Battlecry: Deal 2 damage to all enemy minions.',
+  {bc:(me,op)=>op.board.forEach(m=>dmg(m,2))}),
+C('Tesla','TSLA',6,5,5,'Consumer','legendary','Charge. Deathrattle: Deal 4 damage to a random enemy minion.',
+  {kw:['Charge'],dr:(me,op)=>{const t=rnd(op.board); if(t)dmg(t,4);}}),
+C('Broadcom','AVGO',7,7,6,'Semis','legendary','Battlecry: Give a friendly minion +0/+3 and Taunt.',
+  {tgt:'friendly',bc:(me,op,t)=>{if(t){t.hp+=3;t.maxHp+=3;t.kw=[...(t.kw||[]),'Taunt'];}}}),
+C('Costco','COST',6,4,9,'Consumer','legendary','Taunt, Dividend (lifesteal).',{kw:['Taunt','Dividend']}),
+C('Netflix','NFLX',6,6,5,'Media','legendary','Battlecry: Draw a card.',{bc:me=>draw(me)}),
+C('ASML','ASML',8,6,9,'Semis','legendary','Taunt. Battlecry: Destroy a minion with 3 or less Attack.',
+  {kw:['Taunt'],tgt:'minion',bc:(me,op,t)=>{if(t&&t.atk<=3)t.hp=0;}}),
+C('MercadoLibre','MELI',7,6,6,'Consumer','legendary','Battlecry: Gain 2 Capital this turn.',
+  {bc:me=>me.cap+=2}),
+
+/* ===== EPIC ===== */
+C('Advanced Micro','AMD',5,5,4,'Semis','epic','Battlecry: Deal 2 damage to a minion.',
+  {tgt:'minion',bc:(me,op,t)=>t&&dmg(t,2)}),
+C('Intel','INTC',5,3,7,'Semis','epic','Taunt. Deathrattle: Summon a 0/4 Foundry Line.',
+  {kw:['Taunt'],dr:me=>summon(me,TOK.fab)}),
+C('Adobe','ADBE',5,4,5,'Tech','epic','Battlecry: Give a friendly minion +2/+2.',
+  {tgt:'friendly',bc:(me,op,t)=>{if(t){t.atk+=2;t.hp+=2;t.maxHp+=2;}}}),
+C('Palo Alto Nets','PANW',5,4,5,'Tech','epic','Hedged (ignores the first damage). Taunt.',{kw:['Taunt','Hedged']}),
+C('Intuitive Surgical','ISRG',6,5,6,'Health','epic','Dividend. Battlecry: Restore 3 to your leader.',
+  {kw:['Dividend'],bc:me=>heal({isHero:1,p:me},3)}),
+C('Booking Holdings','BKNG',6,6,4,'Consumer','epic','Battlecry: Draw a card.',{bc:me=>draw(me)}),
+C('CrowdStrike','CRWD',4,3,5,'Tech','epic','Hedged.',{kw:['Hedged']}),
+C('Vertex Pharma','VRTX',5,4,6,'Health','epic','Dividend.',{kw:['Dividend']}),
+C('Qualcomm','QCOM',4,4,4,'Semis','epic','Battlecry: Give your other Semis minions +1/+0.',
+  {bc:me=>me.board.forEach(m=>{if(m.ind==='Semis')m.atk+=1;})}),
+C('PayPal','PYPL',4,3,4,'Finance','epic','Battlecry: Summon a 1/2 Trading Bot with Charge.',
+  {bc:me=>summon(me,TOK.bot)}),
+C('Micron','MU',4,5,3,'Semis','epic','Volatile: Deathrattle: Deal 2 damage to your leader.',
+  {dr:me=>hurt(me,2)}),
+C('Applied Materials','AMAT',5,5,5,'Semis','epic','—'),
+C('PDD Holdings','PDD',5,6,3,'Consumer','epic','Charge.',{kw:['Charge']}),
+C('Airbnb','ABNB',4,4,3,'Consumer','epic','Battlecry: Restore 4 Market Cap to your leader.',
+  {bc:me=>heal({isHero:1,p:me},4)}),
+
+/* ===== RARE ===== */
+C('Texas Instruments','TXN',4,3,5,'Semis','rare','—'),
+C('Analog Devices','ADI',4,4,4,'Semis','rare','—'),
+C('Lam Research','LRCX',5,5,4,'Semis','rare','—'),
+C('KLA Corp','KLAC',5,4,5,'Semis','rare','Taunt.',{kw:['Taunt']}),
+C('Cisco Systems','CSCO',4,3,6,'Tech','rare','Taunt.',{kw:['Taunt']}),
+C('Intuit','INTU',5,4,5,'Tech','rare','Battlecry: Draw a card.',{bc:me=>draw(me)}),
+C('Synopsys','SNPS',4,3,4,'Tech','rare','Battlecry: Give a friendly Semis minion +2/+1.',
+  {tgt:'friendly',bc:(me,op,t)=>{if(t&&t.ind==='Semis'){t.atk+=2;t.hp+=1;t.maxHp+=1;}}}),
+C('Cadence Design','CDNS',3,3,3,'Tech','rare','—'),
+C('Amgen','AMGN',5,4,6,'Health','rare','Dividend.',{kw:['Dividend']}),
+C('Gilead Sciences','GILD',4,3,5,'Health','rare','Battlecry: Restore 3 to a friendly character.',
+  {tgt:'friendly',bc:(me,op,t)=>t&&heal(t,3)}),
+C('Regeneron','REGN',5,5,4,'Health','rare','—'),
+C('Starbucks','SBUX',3,3,3,'Consumer','rare','Dividend.',{kw:['Dividend']}),
+C('Mondelez','MDLZ',3,2,5,'Consumer','rare','Taunt.',{kw:['Taunt']}),
+C('PepsiCo','PEP',4,3,6,'Consumer','rare','Dividend. Taunt.',{kw:['Dividend','Taunt']}),
+C('T-Mobile US','TMUS',4,4,4,'Media','rare','—'),
+C('Charter Comms','CHTR',5,4,6,'Media','rare','Taunt.',{kw:['Taunt']}),
+C('Electronic Arts','EA',3,3,3,'Media','rare','Battlecry: Draw a card if you control a Media minion.',
+  {bc:me=>{if(me.board.some(m=>m.ind==='Media'))draw(me);}}),
+C('Marriott Intl','MAR',3,3,4,'Consumer','rare','—'),
+C('Workday','WDAY',4,4,4,'Tech','rare','—'),
+C('Fortinet','FTNT',3,3,3,'Tech','rare','Hedged.',{kw:['Hedged']}),
+C('Automatic Data','ADP',4,3,5,'Finance','rare','Dividend.',{kw:['Dividend']}),
+C('NXP Semi','NXPI',4,4,3,'Semis','rare','—'),
+C('Zscaler','ZS',3,2,4,'Tech','rare','Taunt. Hedged.',{kw:['Taunt','Hedged']}),
+
+/* ===== COMMON ===== */
+C('Honeywell','HON',4,3,5,'Industrial','common','Taunt.',{kw:['Taunt']}),
+C('Cintas','CTAS',3,2,4,'Industrial','common','—'),
+C('PACCAR','PCAR',3,3,3,'Industrial','common','—'),
+C('Old Dominion','ODFL',2,2,3,'Industrial','common','—'),
+C('Copart','CPRT',2,3,2,'Industrial','common','—'),
+C("O'Reilly Auto",'ORLY',3,4,2,'Consumer','common','—'),
+C('Monster Beverage','MNST',2,3,1,'Consumer','common','Charge.',{kw:['Charge']}),
+C('DexCom','DXCM',2,2,2,'Health','common','Dividend.',{kw:['Dividend']}),
+C('IDEXX Labs','IDXX',3,2,4,'Health','common','—'),
+C('Autodesk','ADSK',3,3,2,'Tech','common','Battlecry: Give a friendly minion +1/+1.',
+  {tgt:'friendly',bc:(me,op,t)=>{if(t){t.atk++;t.hp++;t.maxHp++;}}}),
+C('Roper Tech','ROP',3,2,4,'Industrial','common','—'),
+C('Comcast','CMCSA',2,2,3,'Media','common','—'),
+C('Warner Bros Disc','WBD',2,3,2,'Media','common','—'),
+C('Fastenal','FAST',1,1,3,'Industrial','common','Taunt.',{kw:['Taunt']}),
+C('Keurig Dr Pepper','KDP',1,2,1,'Consumer','common','—'),
+C('Kraft Heinz','KHC',2,1,4,'Consumer','common','Taunt.',{kw:['Taunt']}),
+C('Baker Hughes','BKR',2,2,2,'Industrial','common','—'),
+C('Diamondback Egy','FANG',3,4,2,'Industrial','common','Volatile. Charge.',{kw:['Charge']}),
+C('Datadog','DDOG',2,2,2,'Tech','common','Battlecry: Draw a card if your deck has 20+ cards.',
+  {bc:me=>{if(me.deck.length>=20)draw(me);}}),
+C('Atlassian','TEAM',2,3,1,'Tech','common','—'),
+C('Coinbase','COIN',3,4,1,'Finance','common','Volatile: Charge. Deathrattle: Deal 1 to your leader.',
+  {kw:['Charge'],dr:me=>hurt(me,1)}),
+C('Interactive Brokers','IBKR',2,1,4,'Finance','common','Battlecry: Gain 1 Capital this turn.',
+  {bc:me=>me.cap+=1}),
+
+/* ===== EVENTS (spells) ===== */
+S('IPO',1,'common','Draw a card.',{fx:me=>draw(me)}),
+S('Analyst Upgrade',1,'common','Give a minion +2/+1.',
+  {tgt:'minion',fx:(me,op,t)=>{if(t){t.atk+=2;t.hp++;t.maxHp++;}}}),
+S('Margin Call',2,'common','Destroy a minion with 2 or less Attack.',
+  {tgt:'minion',fx:(me,op,t)=>{if(t&&t.atk<=2)t.hp=0;}}),
+S('Stock Buyback',2,'common','Restore 6 Market Cap to your leader.',{fx:me=>heal({isHero:1,p:me},6)}),
+S('Bear Raid',2,'rare','Deal 2 damage to all enemy minions.',{fx:(me,op)=>op.board.forEach(m=>dmg(m,2))}),
+S('Short Squeeze',3,'rare','Deal 5 damage to a minion.',{tgt:'minion',fx:(me,op,t)=>t&&dmg(t,5)}),
+S('Dividend Payout',3,'rare','Deal 3 damage to any target and restore 3 to your leader.',
+  {tgt:'any',fx:(me,op,t)=>{if(t){dmg(t,3);heal({isHero:1,p:me},3);}}}),
+S('Insider Tip',3,'epic','Draw 2 cards.',{fx:me=>{draw(me);draw(me);}}),
+S('Circuit Breaker',3,'rare','Return a minion to its owner\'s hand.',
+  {tgt:'minion',fx:(me,op,t)=>{if(t)t._bounce=true;}}),
+S('Stock Split',4,'epic','Give a minion +3/+3.',
+  {tgt:'minion',fx:(me,op,t)=>{if(t){t.atk+=3;t.hp+=3;t.maxHp+=3;}}}),
+S('Bull Run',5,'epic','Give your minions +2/+2.',
+  {fx:me=>me.board.forEach(m=>{m.atk+=2;m.hp+=2;m.maxHp+=2;})}),
+S('Quantitative Easing',5,'rare','Restore 8 Market Cap and draw a card.',
+  {fx:me=>{heal({isHero:1,p:me},8);draw(me);}}),
+S('Market Crash',7,'legendary','Destroy all minions.',
+  {fx:(me,op)=>{me.board.forEach(m=>m.hp=0);op.board.forEach(m=>m.hp=0);}}),
+S('Hostile Takeover',8,'legendary','Take control of an enemy minion.',
+  {tgt:'enemy',fx:(me,op,t)=>{if(t)t._steal=true;}}),
+
+/* ============ EXPANSION: "SECONDARY OFFERING" — 50 more cards ============ */
+/* ---- legendary ---- */
+C('Palantir','PLTR',7,6,7,'Tech','legendary','Battlecry: Look at the top card of your deck — draw it if it costs (5) or more.',
+  {bc:me=>{const t=me.deck[me.deck.length-1]; if(t&&t.cost>=5)draw(me);}}),
+C('AstraZeneca','AZN',7,5,8,'Health','legendary','Taunt, Dividend. Battlecry: Restore 4 to your leader.',
+  {kw:['Taunt','Dividend'],bc:me=>heal({isHero:1,p:me},4)}),
+C('Nasdaq Inc.','NDAQ',6,5,6,'Finance','legendary','Battlecry: Reduce the Cost of cards in your hand by (1).',
+  {bc:me=>me.hand.forEach(c=>c.cost=Math.max(0,c.cost-1))}),
+C('Arm Holdings','ARM',6,4,6,'Semis','legendary','Battlecry: Give your Semis minions in hand +1/+1.',
+  {bc:me=>me.hand.forEach(c=>{if(c.ind==='Semis'&&c.type==='minion'){c.atk++;c.hp++;}})}),
+C('Constellation Energy','CEG',6,5,7,'Industrial','legendary','Taunt. Battlecry: Gain 2 Capital this turn.',
+  {kw:['Taunt'],bc:me=>me.cap+=2}),
+
+/* ---- epic ---- */
+C('Super Micro','SMCI',5,7,3,'Tech','epic','Volatile: Charge. Deathrattle: Deal 3 damage to your leader.',
+  {kw:['Charge'],dr:me=>hurt(me,3)}),
+C('AppLovin','APP',5,6,4,'Tech','epic','Battlecry: Deal 2 damage to the enemy leader.',
+  {bc:(me,op)=>hurt(op,2)}),
+C('Moderna','MRNA',5,4,5,'Health','epic','Battlecry: Restore 5 to a friendly character.',
+  {tgt:'friendly',bc:(me,op,t)=>t&&heal(t,5)}),
+C('DoorDash','DASH',4,3,5,'Consumer','epic','Battlecry: Summon a 2/1 Fulfillment Center.',
+  {bc:me=>summon(me,TOK.ful)}),
+C('The Trade Desk','TTD',4,4,4,'Media','epic','Battlecry: Deal 1 damage to all enemy minions.',
+  {bc:(me,op)=>op.board.forEach(m=>dmg(m,1))}),
+C('Robinhood','HOOD',4,3,4,'Finance','epic','Battlecry: Summon two 1/1 Retail Traders with Charge.',
+  {bc:me=>summon(me,TOK.retail,2)}),
+C('Marvell Tech','MRVL',5,5,5,'Semis','epic','Battlecry: Give a friendly Semis minion Hedged.',
+  {tgt:'friendly',bc:(me,op,t)=>{if(t&&t.ind==='Semis'){t.kw.push('Hedged');t.shield=true;}}}),
+
+/* ---- rare ---- */
+C('Microchip Tech','MCHP',3,3,4,'Semis','rare','—'),
+C('Monolithic Power','MPWR',4,4,4,'Semis','rare','Dual-Listed (attacks twice).',{kw:['Dual-Listed']}),
+C('Western Digital','WDC',4,4,4,'Semis','rare','Battlecry: Draw a card if you control a Semis minion.',
+  {bc:me=>{if(me.board.some(m=>m.ind==='Semis'))draw(me);}}),
+C('Akamai','AKAM',4,3,5,'Tech','rare','Taunt.',{kw:['Taunt']}),
+C('Ansys','ANSS',3,2,5,'Tech','rare','Battlecry: Give a friendly minion +0/+2.',
+  {tgt:'friendly',bc:(me,op,t)=>{if(t){t.hp+=2;t.maxHp+=2;}}}),
+C('VeriSign','VRSN',3,2,5,'Tech','rare','Taunt. Hedged.',{kw:['Taunt','Hedged']}),
+C('Baidu','BIDU',4,4,4,'Tech','rare','—'),
+C('Biogen','BIIB',4,4,4,'Health','rare','Dividend.',{kw:['Dividend']}),
+C('Illumina','ILMN',4,3,5,'Health','rare','Battlecry: Draw a card.',{bc:me=>draw(me)}),
+C('GE HealthCare','GEHC',4,4,4,'Health','rare','Dividend.',{kw:['Dividend']}),
+C('Lululemon','LULU',4,5,3,'Consumer','rare','—'),
+C('Ulta Beauty','ULTA',3,3,4,'Consumer','rare','—'),
+C('eBay','EBAY',3,3,3,'Consumer','rare','Battlecry: Return a friendly minion to your hand; it costs (2) less.',
+  {tgt:'friendly',bc:(me,op,t)=>{if(t){t._bounce=true;t._disc=2;}}}),
+C('Take-Two Interactive','TTWO',4,4,4,'Media','rare','Battlecry: Draw a card if you control a Media minion.',
+  {bc:me=>{if(me.board.some(m=>m.ind==='Media'))draw(me);}}),
+C('NetEase','NTES',4,4,5,'Media','rare','—'),
+C('CME Group','CME',4,3,5,'Finance','rare','Dividend. Battlecry: Gain 1 Capital this turn.',
+  {kw:['Dividend'],bc:me=>me.cap++}),
+C('CSX Corp','CSX',4,4,4,'Industrial','rare','Taunt.',{kw:['Taunt']}),
+C('Verisk Analytics','VRSK',4,3,5,'Industrial','rare','—'),
+
+/* ---- common ---- */
+C('ON Semiconductor','ON',3,3,3,'Semis','common','—'),
+C('Skyworks','SWKS',2,2,3,'Semis','common','—'),
+C('Teradyne','TER',3,2,4,'Semis','common','Taunt.',{kw:['Taunt']}),
+C('GlobalFoundries','GFS',3,2,5,'Semis','common','Taunt.',{kw:['Taunt']}),
+C('Seagate','STX',2,3,2,'Semis','common','—'),
+C('Okta','OKTA',2,1,4,'Tech','common','Hedged.',{kw:['Hedged']}),
+C('Zoom Comms','ZM',2,2,3,'Tech','common','—'),
+C('DocuSign','DOCU',2,2,2,'Tech','common','Battlecry: Draw a card if your hand is empty.',
+  {bc:me=>{if(!me.hand.length)draw(me);}}),
+C('CDW Corp','CDW',3,3,3,'Tech','common','—'),
+C('Cognizant','CTSH',3,2,4,'Tech','common','—'),
+C('NetApp','NTAP',3,3,3,'Tech','common','—'),
+C('Align Technology','ALGN',2,2,2,'Health','common','Dividend.',{kw:['Dividend']}),
+C('Ross Stores','ROST',2,3,2,'Consumer','common','—'),
+C('Dollar Tree','DLTR',2,1,4,'Consumer','common','Taunt.',{kw:['Taunt']}),
+C('Expedia Group','EXPE',3,3,3,'Consumer','common','—'),
+C('JD.com','JD',3,4,2,'Consumer','common','—'),
+C('Trip.com','TCOM',2,2,2,'Consumer','common','—'),
+C('Li Auto','LI',3,4,2,'Consumer','common','Charge.',{kw:['Charge']}),
+C('Lucid Group','LCID',2,3,1,'Consumer','common','Volatile: Charge. Deathrattle: Deal 1 to your leader.',
+  {kw:['Charge'],dr:me=>hurt(me,1)}),
+C('Rivian','RIVN',3,3,2,'Consumer','common','Charge.',{kw:['Charge']}),
+C('Sirius XM','SIRI',1,1,3,'Media','common','Taunt.',{kw:['Taunt']}),
+C('Match Group','MTCH',2,3,1,'Media','common','—'),
+C('Paychex','PAYX',3,2,5,'Finance','common','Dividend.',{kw:['Dividend']}),
+C('J.B. Hunt','JBHT',3,3,3,'Industrial','common','—'),
+C('Exelon','EXC',2,1,5,'Industrial','common','Taunt.',{kw:['Taunt']}),
+C('Xcel Energy','XEL',3,2,5,'Industrial','common','Taunt. Dividend.',{kw:['Taunt','Dividend']}),
+C('CoStar Group','CSGP',3,3,3,'Industrial','common','—'),
+
+/* ---- new events ---- */
+S('Short Interest',2,'common','Give a minion -3 Attack.',
+  {tgt:'minion',fx:(me,op,t)=>{if(t)t.atk=Math.max(0,t.atk-3);}}),
+S('Poison Pill',2,'rare','Give a minion "Deathrattle: Deal 3 damage to the enemy leader."',
+  {tgt:'friendly',fx:(me,op,t)=>{if(t){t.dr=(p,e)=>hurt(e,3);t.tx='Deathrattle: Deal 3 to the enemy leader.';}}}),
+S('Earnings Beat',3,'common','Give a minion +2/+2 and Dividend.',
+  {tgt:'minion',fx:(me,op,t)=>{if(t){t.atk+=2;t.hp+=2;t.maxHp+=2;t.kw.push('Dividend');}}}),
+S('Regulatory Probe',3,'rare','Silence a minion.',
+  {tgt:'minion',fx:(me,op,t)=>{if(t){t.kw=[];t.shield=false;t.dr=null;t.tx='Silenced.';}}}),
+S('Flash Crash',3,'epic','Deal 3 damage to ALL minions.',
+  {fx:(me,op)=>{[...me.board,...op.board].forEach(m=>dmg(m,3));}}),
+S('Retail Frenzy',4,'rare','Summon three 1/1 Retail Traders with Charge.',
+  {fx:me=>summon(me,TOK.retail,3)}),
+S('Delisting Notice',5,'rare','Destroy a minion.',{tgt:'minion',fx:(me,op,t)=>{if(t)t.hp=0;}}),
+S('Index Inclusion',5,'epic','Draw 3 cards.',{fx:me=>{draw(me);draw(me);draw(me);}}),
+];
+
+/* ---------- LEADERS (CEOs) ---------- */
+const LEADERS=[
+ {nm:'Jensen Huang',co:'NVIDIA',tk:'NVDA',wiki:'Jensen Huang',ind:'Semis',
+  pass:'Your Semiconductor minions cost (1) less.',
+  pw:'CUDA Moat',pwtx:'Give a minion +2/+0.',pwtgt:'minion',
+  power:(me,op,t)=>{if(t)t.atk+=2;}},
+ {nm:'Tim Cook',co:'Apple',tk:'AAPL',wiki:'Tim Cook',ind:'Consumer',
+  pass:'Your Consumer minions cost (1) less.',
+  pw:'Buyback',pwtx:'Restore 3 Market Cap.',pwtgt:null,
+  power:me=>heal({isHero:1,p:me},3)},
+ {nm:'Satya Nadella',co:'Microsoft',tk:'MSFT',wiki:'Satya Nadella',ind:'Tech',
+  pass:'Your Tech minions cost (1) less.',
+  pw:'Azure Scale',pwtx:'Summon a 1/1 Cloud Instance.',pwtgt:null,
+  power:me=>summon(me,TOK.cloud)},
+ {nm:'Elon Musk',co:'Tesla',tk:'TSLA',wiki:'Elon Musk',ind:'Consumer',
+  pass:'Your minions with Charge cost (1) less.',
+  pw:'Volatility',pwtx:'Deal 2 damage to a random enemy character.',pwtgt:null,
+  power:(me,op)=>{const t=rnd([...op.board,{isHero:1,p:op}]);dmg(t,2);}},
+ {nm:'Lisa Su',co:'AMD',tk:'AMD',wiki:'Lisa Su',ind:'Semis',
+  pass:'Your Semiconductor minions cost (1) less.',
+  pw:'Roadmap',pwtx:'Give a minion +0/+3 and Taunt.',pwtgt:'minion',
+  power:(me,op,t)=>{if(t){t.hp+=3;t.maxHp+=3;t.kw=[...(t.kw||[]),'Taunt'];}}},
+ {nm:'Reed Hastings',co:'Netflix',tk:'NFLX',wiki:'Reed Hastings',ind:'Media',
+  pass:'Your Media minions cost (1) less.',
+  pw:'Binge Drop',pwtx:'Draw a card, take 1 damage.',pwtgt:null,
+  power:me=>{draw(me);hurt(me,1);}},
+ {nm:'Andy Jassy',co:'Amazon',tk:'AMZN',wiki:'Andy Jassy',ind:'Consumer',
+  pass:'Your Consumer minions cost (1) less.',
+  pw:'Prime Logistics',pwtx:'Summon a 2/1 Fulfillment Center.',pwtgt:null,
+  power:me=>summon(me,TOK.ful)},
+ {nm:'Sundar Pichai',co:'Alphabet',tk:'GOOGL',wiki:'Sundar Pichai',ind:'Tech',
+  pass:'Your Tech minions cost (1) less.',
+  pw:'Crawl & Index',pwtx:'Deal 1 damage to all enemy minions.',pwtgt:null,
+  power:(me,op)=>op.board.forEach(m=>dmg(m,1))},
+ {nm:'Mark Zuckerberg',co:'Meta Platforms',tk:'META',wiki:'Mark Zuckerberg',ind:'Media',
+  pass:'Your Media minions cost (1) less.',
+  pw:'Ad Auction',pwtx:'Deal 2 damage to any target.',pwtgt:'any',
+  power:(me,op,t)=>{if(t)dmg(t,2);}},
+ {nm:'Hock Tan',co:'Broadcom',tk:'AVGO',wiki:'Hock Tan',ind:'Semis',
+  pass:'Your Semiconductor minions cost (1) less.',
+  pw:'Roll-Up',pwtx:'Give a minion +1/+2.',pwtgt:'minion',
+  power:(me,op,t)=>{if(t){t.atk++;t.hp+=2;t.maxHp+=2;}}},
+ {nm:'Vlad Tenev',co:'Robinhood',tk:'HOOD',wiki:'Vladimir Tenev',ind:'Finance',
+  pass:'Your Finance minions cost (1) less.',
+  pw:'Order Flow',pwtx:'Summon a 1/1 Retail Trader with Charge.',pwtgt:null,
+  power:me=>summon(me,TOK.retail)},
+ {nm:'Robert Bradway',co:'Amgen',tk:'AMGN',wiki:'Robert Bradway',ind:'Health',
+  pass:'Your Healthcare minions cost (1) less.',
+  pw:'Clinical Trial',pwtx:'Restore 4 to a friendly character.',pwtgt:'friendly',
+  power:(me,op,t)=>t&&heal(t,4)},
+ {nm:'Michael Intrator',co:'CoreWeave',tk:'CRWV',wiki:'Michael Intrator',ind:'Industrial',
+  pass:'Your Industrial minions cost (1) less.',
+  pw:'Rack Buildout',pwtx:'Give a minion +0/+2 and draw if it has Taunt.',pwtgt:'minion',
+  power:(me,op,t)=>{if(t){t.hp+=2;t.maxHp+=2;if((t.kw||[]).includes('Taunt'))draw(me);}}},
+];
+
+/* ============================================================
+   MOTION — the engine pushes events, the view plays them.
+   Focal moment: executing a trade. A card leaves your hand, is
+   held up at centre "on the tape", then settles onto the floor.
+   Supporting: attacks lunge at their target, damage prints in
+   ticker red/green above the position that took it.
+   ============================================================ */
+const hasDOM=typeof document!=='undefined'&&!!document.body;
+const REDUCE=typeof matchMedia!=='undefined'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+let FXQ=[], RECTS={}, pendingPlay=null;
+const fx=e=>{ if(FXQ.length<80)FXQ.push(e); };
+const keyOf=t=>t.isHero?('hero'+G.p.indexOf(t.p)):('m'+t.uid);
+const EASE='cubic-bezier(.16,1,.3,1)';
+
+function elFor(k){ return document.querySelector(
+  k.startsWith('hero')?`[data-hero="${k.slice(4)}"]`:`[data-m="${k.slice(1)}"]`); }
+function captureRects(){
+  if(!hasDOM)return;
+  document.querySelectorAll('[data-m],[data-hero]').forEach(el=>{
+    RECTS[el.dataset.m?('m'+el.dataset.m):('hero'+el.dataset.hero)]=el.getBoundingClientRect();
+  });
+}
+const rectOf=k=>{ const el=elFor(k); return el?el.getBoundingClientRect():RECTS[k]; };
+const layer=()=>{ let l=document.getElementById('fx');
+  if(!l){ l=document.createElement('div'); l.id='fx'; document.body.appendChild(l); } return l; };
+function ghost(rect,html,cls){
+  const d=document.createElement('div'); d.className='ghost '+(cls||''); d.innerHTML=html;
+  Object.assign(d.style,{left:rect.left+'px',top:rect.top+'px',
+    width:rect.width+'px',height:rect.height+'px'});
+  layer().appendChild(d); return d;
+}
+const gone=(el,anim)=>anim.finished.then(()=>el.remove(),()=>el.remove());
+
+/* damage / heal printed over a position */
+function print(k,n,kind,delay){
+  const r=rectOf(k); if(!r)return;
+  const d=document.createElement('div');
+  d.className='fignum '+kind; d.textContent=(kind==='heal'?'+':'−')+n;
+  Object.assign(d.style,{left:(r.left+r.width/2)+'px',top:(r.top+r.height*.5)+'px'});
+  layer().appendChild(d);
+  /* reduced motion still needs the number — it just holds still instead of flying */
+  gone(d,d.animate(REDUCE?[
+    {transform:'translate(-50%,-50%)',opacity:0},
+    {transform:'translate(-50%,-50%)',opacity:1,offset:.15},
+    {transform:'translate(-50%,-50%)',opacity:1,offset:.75},
+    {transform:'translate(-50%,-50%)',opacity:0}
+  ]:[
+    {transform:'translate(-50%,-50%) scale(.4)',opacity:0},
+    {transform:'translate(-50%,-50%) scale(1.35)',opacity:1,offset:.22},
+    {transform:'translate(-50%,-50%) scale(1)',opacity:1,offset:.5},
+    {transform:'translate(-50%,-150%) scale(.95)',opacity:0}
+  ],{duration:REDUCE?900:1000,delay,easing:EASE,fill:'backwards'}));
+  const el=elFor(k);
+  if(el&&!REDUCE) el.animate([{transform:'translate(0,0)'},{transform:'translate(-5px,2px)'},
+    {transform:'translate(4px,-2px)'},{transform:'translate(0,0)'}],
+    {duration:220,delay,easing:'ease-out'});
+  if(kind==='dmg'&&!REDUCE){
+    const ring=document.createElement('div'); ring.className='shock';
+    Object.assign(ring.style,{left:(r.left+r.width/2)+'px',top:(r.top+r.height/2)+'px'});
+    layer().appendChild(ring);
+    gone(ring,ring.animate([
+      {transform:'translate(-50%,-50%) scale(.15)',opacity:1},
+      {transform:'translate(-50%,-50%) scale(1.5)',opacity:0}],
+      {duration:380,delay,easing:'ease-out',fill:'backwards'}));
+  }
+}
+
+/* a position lunges at what it is attacking */
+function lunge(e,delay){
+  const from=rectOf(e.from), to=rectOf(e.to); if(!from||!to)return;
+  const dx=(to.left-from.left)*.52, dy=(to.top-from.top)*.52;
+  const live=elFor(e.from);
+  const node=live||ghost(from,e.html||'','');
+  const a=node.animate([
+    {transform:'translate(0,0) scale(1)',zIndex:9},
+    {transform:`translate(${dx*.18}px,${dy*.18}px) scale(.96)`,offset:.18},
+    {transform:`translate(${dx}px,${dy}px) scale(1.07)`,offset:.44},
+    {transform:'translate(0,0) scale(1)'}
+  ],{duration:520,delay,easing:'cubic-bezier(.4,0,.25,1)'});
+  if(!live)gone(node,a);
+}
+
+/* the focal sequence: hand → centre stage → the floor */
+function flight(e,delay){
+  const to=rectOf(e.key); if(!to)return;
+  const from=e.from||RECTS['hero1']||to;
+  const el=elFor(e.key);
+  const html=e.html||(el?el.outerHTML:'');
+  if(el)el.style.visibility='hidden';
+  const g=ghost(to,html,'flying');
+  const d=(r)=>[r.left-to.left+(r.width-to.width)/2, r.top-to.top+(r.height-to.height)/2];
+  const [sx,sy]=d(from);
+  const cx=innerWidth/2-(to.left+to.width/2), cy=innerHeight*.42-(to.top+to.height/2);
+  const a=g.animate([
+    {transform:`translate(${sx}px,${sy}px) scale(.72) rotate(-6deg)`,opacity:.55,offset:0},
+    {transform:`translate(${cx}px,${cy}px) scale(1.85)`,opacity:1,offset:.34},
+    {transform:`translate(${cx}px,${cy}px) scale(1.85)`,opacity:1,offset:.6},
+    {transform:'translate(0,0) scale(1)',opacity:1,offset:1}
+  ],{duration:REDUCE?200:980,delay,easing:EASE,fill:'backwards'});
+  a.finished.finally(()=>{ g.remove(); const l=elFor(e.key); if(l)l.style.visibility=''; });
+}
+
+/* an event card resolves at centre and burns off */
+function cast(e,delay){
+  const from=e.from||RECTS['hero1']; if(!from||!e.html)return;
+  const g=ghost(from,e.html,'flying');
+  const cx=innerWidth/2-(from.left+from.width/2), cy=innerHeight*.42-(from.top+from.height/2);
+  gone(g,g.animate([
+    {transform:'translate(0,0) scale(1)',opacity:1,filter:'brightness(1)'},
+    {transform:`translate(${cx}px,${cy}px) scale(1.9)`,opacity:1,offset:.4},
+    {transform:`translate(${cx}px,${cy}px) scale(1.9)`,opacity:1,filter:'brightness(1)',offset:.62},
+    {transform:`translate(${cx}px,${cy}px) scale(2.4)`,opacity:0,filter:'brightness(3.5)'}
+  ],{duration:REDUCE?200:1000,delay,easing:EASE,fill:'backwards'}));
+}
+
+/* a bankrupt position falls off the floor */
+function bust(e,delay){
+  const r=RECTS[e.key]; if(!r||!e.html)return;
+  const g=ghost(r,e.html,'');
+  gone(g,g.animate([
+    {transform:'translate(0,0) scale(1) rotate(0)',opacity:1,filter:'grayscale(0)'},
+    {transform:'translate(6px,10px) scale(.94) rotate(4deg)',opacity:.9,filter:'grayscale(.8)',offset:.3},
+    {transform:'translate(14px,74px) scale(.72) rotate(16deg)',opacity:0,filter:'grayscale(1) brightness(.4)'}
+  ],{duration:REDUCE?200:620,delay,easing:'cubic-bezier(.5,0,.9,.6)',fill:'backwards'}));
+}
+
+function flushFX(){
+  const q=FXQ; FXQ=[];
+  if(!hasDOM)return;
+  let t=0;
+  for(const e of q){
+    /* under reduced motion nothing travels across the screen; the numbers still report */
+    if(e.t==='dmg'||e.t==='heal'){ print(e.key,e.n,e.t,t); t+=REDUCE?140:90; }
+    else if(REDUCE){ continue; }
+    else if(e.t==='play'){ flight(e,t); t+=340; }
+    else if(e.t==='cast'){ cast(e,t); t+=380; }
+    else if(e.t==='strike'){ lunge(e,t); t+=170; }
+    else if(e.t==='bust'){ bust(e,t); t+=70; }
+  }
+}
+
+/* ============================================================
+   GAME STATE
+   ============================================================ */
+let G=null, sel=null /* {kind:'hand'|'power', i} */, atk=null /* minion uid */;
+
+const mk=def=>({...clone(def),bc:def.bc,dr:def.dr,fx:def.fx,uid:++_id,
+  maxHp:def.hp,kw:[...(def.kw||[])],shield:(def.kw||[]).includes('Hedged'),
+  sick:!(def.kw||[]).includes('Charge'),atks:0});
+
+function buildDeck(ind){
+  const d=[],pick=[...POOL];
+  while(d.length<30){
+    // 45% chance to bias toward the leader's industry
+    let c = Math.random()<0.45 ? (pick.filter(x=>x.ind===ind)[0]?rnd(pick.filter(x=>x.ind===ind)):rnd(pick)) : rnd(pick);
+    // Two copies of anything, legendaries included - AAPL twice is a deck.
+    if(d.filter(x=>x.nm===c.nm).length>=2)continue;
+    d.push(c);
+  }
+  return d.sort(()=>Math.random()-.5);
+}
+
+function newPlayer(leader,ai){
+  return {leader,ai,hp:30,maxHp:30,cap:0,maxCap:0,deck:buildDeck(leader.ind).map(c=>clone(c)),
+    hand:[],board:[],fatigue:0,pwUsed:false,
+    _defs:{}}; // defs restored on draw
+}
+// clone() strips functions; re-attach from POOL by name
+const defOf=nm=>POOL.find(c=>c.nm===nm)||Object.values(TOK).find(c=>c.nm===nm);
+function rehydrate(c){const d=defOf(c.nm); if(d){c.bc=d.bc;c.dr=d.dr;c.fx=d.fx;} return c;}
+
+function draw(p){
+  if(!p.deck.length){ p.fatigue++; hurt(p,p.fatigue);
+    log(`<b>${p.leader.co}</b> is out of cards — fatigue for ${p.fatigue}`); return; }
+  const c=rehydrate(p.deck.pop());
+  if(p.hand.length>=10){ log(`<b>${p.leader.co}</b> overdraws — ${c.nm} is discarded`); return; }
+  p.hand.push(c);
+}
+
+let LOG=[];
+const log=s=>{LOG.unshift(s); LOG=LOG.slice(0,60);};
+
+/* Match theme. The track plays through YouTube's own embedded player rather
+   than a copy of the audio - nothing is downloaded or rehosted, and YouTube
+   still counts the play. Picking a leader is a click, which is the user
+   gesture browsers require before audio may autoplay.
+   ponytail: the toggle tears the iframe down and rebuilds it, so unmuting
+   restarts the track from the top. Load the YT IFrame API if that matters. */
+const THEME='QnVPwKkCzD0';
+let music=null;
+function startMusic(){
+  if(music)return;
+  music=document.createElement('iframe');
+  music.id='music'; music.title='Match theme'; music.allow='autoplay';
+  music.src=`https://www.youtube.com/embed/${THEME}?autoplay=1&loop=1&playlist=${THEME}&controls=0&playsinline=1`;
+  document.body.appendChild(music);
+}
+function stopMusic(){ if(music){ music.remove(); music=null; } }
+
+function start(li){
+  startMusic();
+  const you=newPlayer(LEADERS[li],false);
+  let ai; do{ ai=newPlayer(rnd(LEADERS),true); }while(ai.leader.nm===you.leader.nm);
+  G={p:[you,ai],cur:0,turn:1,over:null};
+  for(let i=0;i<5;i++){draw(you);draw(ai);}
+  draw(ai); // going-second compensation
+  ai.hand.push(rehydrate(clone(S('Fed Stimulus',0,'common','Gain 1 Capital this turn.',{}))));
+  ai.hand[ai.hand.length-1].fx=me=>me.cap++;
+  log(`<b>Market open.</b> ${you.leader.nm} (${you.leader.co}) vs ${ai.leader.nm} (${ai.leader.co}).`);
+  beginTurn();
+  render();
+}
+
+const me=()=>G.p[G.cur], foe=()=>G.p[1-G.cur];
+
+function costOf(p,c){
+  const L=p.leader;
+  let n=c.cost;
+  if(c.type==='minion'){
+    if(L.nm==='Elon Musk'){ if((c.kw||[]).includes('Charge'))n--; }
+    else if(c.ind===L.ind) n--;
+  }
+  return Math.max(0,n);
+}
+
+function beginTurn(){
+  const p=me();
+  p.maxCap=Math.min(10,p.maxCap+1); p.cap=p.maxCap; p.pwUsed=false;
+  p.board.forEach(m=>{m.sick=false;m.atks=0;});
+  draw(p);
+  log(`— <b>Turn ${G.turn}</b>: ${p.leader.co} (${p.cap} capital) —`);
+}
+
+function endTurn(){
+  if(G.over)return;
+  sel=null;atk=null;
+  G.cur=1-G.cur; G.turn++;
+  beginTurn(); cleanup();
+  if(me().ai){ render(); setTimeout(aiTurn,700); } else render();
+}
+
+/* ---------- playing ---------- */
+function canPlay(p,c){ return p.cap>=costOf(p,c) &&
+  !(c.type==='minion'&&p.board.length>=7); }
+
+function needsTarget(p,c){
+  if(!c.tgt)return false;
+  const en=foeOf(p), tg=[];
+  if(c.tgt==='minion')return p.board.length+en.board.length>0;
+  if(c.tgt==='friendly')return p.board.length>0;
+  if(c.tgt==='enemy')return en.board.length>0;
+  if(c.tgt==='any')return true;
+  return false;
+}
+const foeOf=p=>G.p[G.p.indexOf(p)===0?1:0];
+
+function playCard(p,i,target){
+  const c=p.hand[i]; if(!canPlay(p,c))return false;
+  p.cap-=costOf(p,c);
+  p.hand.splice(i,1);
+  const en=foeOf(p);
+  const src=pendingPlay; pendingPlay=null;    // where on screen it left from
+  if(c.type==='minion'){
+    const m=mk(c);
+    if(c.ind===p.leader.ind){ m.atk++;m.hp++;m.maxHp++; }   // leader industry synergy
+    p.board.push(m);
+    fx({t:'play',key:'m'+m.uid,from:src&&src.rect});
+    log(`<b>${p.leader.co}</b> plays ${c.nm} (${c.tk})`);
+    if(c.bc)c.bc(p,en,target,m);
+  }else{
+    fx({t:'cast',from:src&&src.rect,html:src?src.html:handHTML(p,c,-1,false)});
+    log(`<b>${p.leader.co}</b> triggers ${c.nm}`);
+    if(c.fx)c.fx(p,en,target);
+  }
+  cleanup(); return true;
+}
+
+function usePower(p,target){
+  if(p.pwUsed||p.cap<2)return false;
+  p.cap-=2;p.pwUsed=true;
+  log(`<b>${p.leader.nm}</b> uses ${p.leader.pw}`);
+  p.leader.power(p,foeOf(p),target);
+  cleanup(); return true;
+}
+
+/* ---------- combat ---------- */
+function doAttack(a,tgt){
+  const p=G.p.find(x=>x.board.includes(a)), en=foeOf(p);
+  const taunts=en.board.filter(m=>(m.kw||[]).includes('Taunt'));
+  if(taunts.length && !taunts.includes(tgt)){ log('Taunt blocks that attack.'); return false; }
+  const lifesteal=(a.kw||[]).includes('Dividend');
+  fx({t:'strike',from:'m'+a.uid,to:keyOf(tgt)});
+  if(tgt.isHero){
+    dmg(tgt,a.atk);
+    log(`${a.tk} hits ${tgt.p.leader.co} for ${a.atk}`);
+  }else{
+    log(`${a.tk} (${a.atk}/${a.hp}) trades with ${tgt.tk} (${tgt.atk}/${tgt.hp})`);
+    dmg(tgt,a.atk); dmg(a,tgt.atk);
+  }
+  if(lifesteal)heal({isHero:1,p},a.atk);
+  a.atks++;
+  const wf=(a.kw||[]).includes('Dual-Listed');
+  if(a.atks>=(wf?2:1))a.sick='done';
+  cleanup(); return true;
+}
+const canAttack=m=>m.sick===false&&m.atk>0;
+
+/* ---------- cleanup / deaths ---------- */
+function cleanup(){
+  G.p.forEach((p,i)=>{
+    const en=G.p[1-i];
+    // bounce & steal markers from spells
+    p.board.filter(m=>m._bounce).forEach(m=>{ m._bounce=false;
+      p.board.splice(p.board.indexOf(m),1);
+      if(p.hand.length<10){
+        const back=rehydrate(clone(defOf(m.nm)||m));
+        if(m._disc)back.cost=Math.max(0,back.cost-m._disc);
+        p.hand.push(back);
+      }
+      log(`${m.nm} is delisted back to hand`); });
+    p.board.filter(m=>m._steal).forEach(m=>{ m._steal=false;
+      p.board.splice(p.board.indexOf(m),1);
+      if(en.board.length<7){en.board.push(m);m.sick=true;m.atks=0;log(`${m.nm} is acquired!`);} });
+  });
+  let died=true, guard=0;
+  while(died && guard++<10){
+    died=false;
+    G.p.forEach((p,i)=>{
+      const dead=p.board.filter(m=>m.hp<=0);
+      dead.forEach(m=>{ p.board.splice(p.board.indexOf(m),1);
+        fx({t:'bust',key:'m'+m.uid,html:hasDOM?(elFor('m'+m.uid)||{}).outerHTML:''});
+        log(`${m.tk} goes bankrupt`);
+        if(m.dr){m.dr(p,G.p[1-i]);died=true;} });
+      if(dead.length)died=true;
+    });
+  }
+  const [a,b]=G.p;
+  if(a.hp<=0||b.hp<=0){
+    G.over = a.hp<=0&&b.hp<=0 ? 'draw' : (b.hp<=0?0:1);
+  }
+}
+
+/* ============================================================
+   AI — greedy but not stupid
+   ============================================================ */
+function aiTurn(){
+  const p=me(),en=foeOf(p);
+  if(G.over)return render();
+  // 1. play cards, most expensive affordable first
+  let acted=true,guard=0;
+  while(acted&&guard++<20){
+    acted=false;
+    const idx=p.hand.map((c,i)=>i)
+      .filter(i=>canPlay(p,p.hand[i]))
+      .sort((x,y)=>costOf(p,p.hand[y])-costOf(p,p.hand[x]));
+    for(const i of idx){
+      const c=p.hand[i];
+      if(c.tgt&&!needsTarget(p,c))continue;
+      // skip bad plays
+      if(c.nm==='Market Crash'&&p.board.length>=en.board.length)continue;
+      if(c.nm==='Hostile Takeover'&&!en.board.length)continue;
+      playCard(p,i,aiTarget(p,en,c.tgt,c));
+      acted=true;break;
+    }
+  }
+  // 2. hero power if capital left
+  if(p.cap>=2&&!p.pwUsed){
+    const t=p.leader.pwtgt?aiTarget(p,en,p.leader.pwtgt,{}):null;
+    if(!p.leader.pwtgt||t)usePower(p,t);
+  }
+  // 3. attacks
+  const taunts=()=>en.board.filter(m=>(m.kw||[]).includes('Taunt'));
+  p.board.filter(canAttack).forEach(m=>{
+    if(G.over)return;
+    if(!canAttack(m))return;
+    const t=taunts();
+    if(t.length){ doAttack(m,t.sort((a,b)=>a.hp-b.hp)[0]); }
+    else{
+      // kill something profitable, else face
+      const kill=en.board.filter(x=>x.hp<=m.atk&&x.atk<m.hp).sort((a,b)=>b.atk-a.atk)[0];
+      doAttack(m, kill|| {isHero:1,p:en});
+    }
+  });
+  render();
+  setTimeout(()=>{ if(!G.over){ G.cur=1-G.cur;G.turn++;beginTurn();cleanup();render(); } },600);
+}
+function aiTarget(p,en,kind,c){
+  if(!kind)return null;
+  const harmful=/damage|Destroy|Return|control/i.test(c.tx||'');
+  if(kind==='friendly')return p.board.sort((a,b)=>b.atk-a.atk)[0]||null;
+  if(kind==='enemy')return en.board.sort((a,b)=>b.atk-a.atk)[0]||null;
+  if(kind==='any')return {isHero:1,p:en};
+  // 'minion'
+  return harmful ? (en.board.sort((a,b)=>b.atk-a.atk)[0]||p.board[0]||null)
+                 : (p.board.sort((a,b)=>b.atk-a.atk)[0]||en.board[0]||null);
+}
+
+/* ============================================================
+   UI
+   ============================================================ */
+const app=()=>document.getElementById('app');
+
+function render(){
+  if(!G)return renderSetup();
+  captureRects();
+  const you=G.p[0],ai=G.p[1],yourTurn=G.cur===0&&!G.over;
+  const targeting = sel!==null;
+  app().innerHTML=`
+  <div class="hud">
+    <span class="brand">▲ MARKET SHARE</span>
+    <span>TURN ${G.turn} · ${G.cur===0?'YOUR MOVE':'OPPONENT TRADING'}</span>
+    <span class="tape">${LOG[0]?LOG[0].replace(/<[^>]+>/g,''):''}</span>
+    <button id="mus" title="Match theme">${music?'♪ ON':'♪ OFF'}</button>
+  </div>
+
+  <div class="arena">
+    <div class="side">
+      ${heroHTML(ai,1,targeting)}
+      <div class="board" id="b1">${ai.board.map(m=>minionHTML(m,1,targeting)).join('')||'<span class="empty">NO OPEN POSITIONS</span>'}</div>
+      <div class="deckinfo"><div class="n">${ai.deck.length}</div>deck<div class="n">${ai.hand.length}</div>hand</div>
+    </div>
+    <div class="midline">${G.cur===0?'YOUR FLOOR':'OPPONENT ACTING'}</div>
+    <div class="side">
+      ${heroHTML(you,0,targeting)}
+      <div class="board mine" id="b0">${you.board.map(m=>minionHTML(m,0,targeting)).join('')||'<span class="empty">ACQUIRE A POSITION</span>'}</div>
+      <div class="deckinfo"><div class="n">${you.deck.length}</div>deck<div class="n">${you.hand.length}</div>hand</div>
+    </div>
+  </div>
+
+  <div class="hint">${targeting?'CHOOSE A TARGET':(atk?'CHOOSE WHAT TO ATTACK':'')}</div>
+  <div class="bar">
+    <button id="end" ${yourTurn?'':'disabled'}>END TURN</button>
+    ${targeting||atk?'<button id="cancel">CANCEL</button>':''}
+  </div>
+
+  <div class="hand">${you.hand.map((c,i)=>handHTML(you,c,i,yourTurn)).join('')}</div>
+  <div class="log">${LOG.map(l=>'<div>'+l+'</div>').join('')}</div>
+  ${G.over!==null?overHTML():''}`;
+  wire(); flushFX();
+}
+
+function heroHTML(p,side,targeting){
+  const isFoe=side===1;
+  const tgtOK = targeting && (curTgtKind()==='any'||curTgtKind()==='hero') ;
+  const canHit = atk!==null && isFoe && !G.p[1].board.some(m=>(m.kw||[]).includes('Taunt'));
+  return `<div class="hero ${G.cur===side&&!G.over?'active':''} ${(tgtOK&&isFoe)||canHit?'tgt':''}"
+      data-hero="${side}">
+    <div class="port">${crest(p.leader,54)}</div>
+    <div class="hn">${p.leader.nm}</div><div class="hc">${p.leader.co.toUpperCase()}</div>
+    <div class="vitals">
+      <span class="hp ${p.hp<=10?'hurt':''}">$${p.hp}B</span>
+      <span class="cap">${p.cap}/${p.maxCap}⚡</span>
+    </div>
+    <div class="pass">${p.leader.pass}</div>
+    ${side===0?`<button class="hpow ${!p.pwUsed&&p.cap>=2&&G.cur===0?'on':''}"
+       id="pw" ${(!p.pwUsed&&p.cap>=2&&G.cur===0&&!G.over)?'':'disabled'}>
+       ${p.leader.pw} (2)<br><span style="color:var(--dim)">${p.leader.pwtx}</span></button>`:''}
+  </div>`;
+}
+function curTgtKind(){
+  if(sel===null)return null;
+  if(sel.kind==='power')return G.p[0].leader.pwtgt;
+  return G.p[0].hand[sel.i].tgt;
+}
+function minionHTML(m,side,targeting){
+  const kind=curTgtKind();
+  const isMine=side===0;
+  let tgt=false;
+  if(targeting){
+    tgt = kind==='minion'||kind==='any' ? true
+        : kind==='friendly' ? isMine
+        : kind==='enemy' ? !isMine : false;
+  } else if(atk!==null && !isMine){
+    const taunts=G.p[1].board.filter(x=>(x.kw||[]).includes('Taunt'));
+    tgt = !taunts.length || taunts.includes(m);
+  }
+  const ready = isMine && G.cur===0 && !G.over && canAttack(m) && atk===null;
+  const asleep = isMine && !canAttack(m) && !G.over;
+  return `<div class="card minion rar-${m.rar} ${(m.kw||[]).includes('Taunt')?'taunt':''}
+      ${m.shield?'shield':''} ${ready?'ready':''} ${tgt?'tgt':''} ${atk===m.uid?'picked':''}
+      ${asleep?'sickly':''}"
+      data-m="${m.uid}" data-side="${side}" title="${m.nm} (${m.tk}) — ${m.tx}">
+    <div class="frame"></div>
+    ${art(m,58)}
+    <div class="tk">${m.tk}</div><div class="nm">${m.nm}</div>
+    <div class="kw">${(m.kw||[]).join(' · ')}</div>
+    <div class="stats"><span class="a">${m.atk}</span><span class="h ${m.hp<m.maxHp?'dmg':''}">${m.hp}</span></div>
+  </div>`;
+}
+function handHTML(p,c,i,yourTurn){
+  const ok=yourTurn&&canPlay(p,c);
+  return `<div class="card hand-c rar-${c.rar} ${ok?'playable':''} ${p.cap<costOf(p,c)?'dead-cost':''}"
+      data-h="${i}" title="${c.nm} (${c.tk}) — ${c.tx}">
+    <div class="frame"></div>
+    <div class="cost">${costOf(p,c)}</div>
+    ${art(c,70)}
+    <div class="tk">${c.tk}</div><div class="nm">${c.nm}</div>
+    <div class="ind">${c.ind} · ${c.rar}</div>
+    <div class="tx">${c.tx}</div>
+    ${c.type==='minion'?`<div class="stats"><span class="a">${c.atk}</span><span class="h">${c.hp}</span></div>`:''}
+  </div>`;
+}
+function overHTML(){
+  const w=G.over==='draw'?'MARKET HALTED — DRAW':(G.over===0?'YOU WIN THE MARKET':'YOU WERE DELISTED');
+  return `<div class="over"><div><h2>${w}</h2>
+    <p style="color:var(--dim);margin-bottom:16px">Turn ${G.turn}</p>
+    <button id="again" style="background:var(--green);color:#04180f;padding:12px 28px;font-weight:700">NEW GAME</button>
+  </div></div>`;
+}
+
+/* ---------- events ---------- */
+function wire(){
+  const q=s=>document.querySelectorAll(s), one=s=>document.querySelector(s);
+  one('#end')?.addEventListener('click',endTurn);
+  one('#cancel')?.addEventListener('click',()=>{sel=null;atk=null;pendingPlay=null;render();});
+  one('#again')?.addEventListener('click',()=>{G=null;LOG=[];stopMusic();renderSetup();});
+  one('#mus')?.addEventListener('click',()=>{ music?stopMusic():startMusic(); render(); });
+  one('#pw')?.addEventListener('click',()=>{
+    const p=G.p[0];
+    if(p.leader.pwtgt){ sel={kind:'power'}; render(); }
+    else { usePower(p,null); sel=null; render(); }
+  });
+  q('[data-h]').forEach(el=>el.addEventListener('click',()=>{
+    if(G.cur!==0||G.over)return;
+    const i=+el.dataset.h,p=G.p[0],c=p.hand[i];
+    if(!canPlay(p,c))return;
+    atk=null;
+    pendingPlay={rect:el.getBoundingClientRect(),html:el.outerHTML};
+    if(c.tgt&&needsTarget(p,c)){ sel={kind:'hand',i}; render(); }
+    else { playCard(p,i,null); sel=null; render(); }
+  }));
+  q('[data-m]').forEach(el=>el.addEventListener('click',()=>{
+    if(G.cur!==0||G.over)return;
+    const uid=+el.dataset.m, side=+el.dataset.side;
+    const m=G.p[side].board.find(x=>x.uid===uid);
+    if(sel){ resolveTarget(m); return; }
+    if(side===0){ if(canAttack(m))  { atk = atk===uid?null:uid; render(); } return; }
+    if(atk!==null){
+      const a=G.p[0].board.find(x=>x.uid===atk);
+      if(a&&doAttack(a,m)){atk=null;} render();
+    }
+  }));
+  q('[data-hero]').forEach(el=>el.addEventListener('click',()=>{
+    if(G.cur!==0||G.over)return;
+    const side=+el.dataset.hero, h={isHero:1,p:G.p[side]};
+    if(sel){ resolveTarget(h); return; }
+    if(atk!==null&&side===1){
+      const a=G.p[0].board.find(x=>x.uid===atk);
+      if(a&&doAttack(a,h)){atk=null;} render();
+    }
+  }));
+}
+function resolveTarget(t){
+  const kind=curTgtKind(), p=G.p[0];
+  const isMine = t.isHero ? t.p===p : p.board.includes(t);
+  const legal = kind==='minion' ? !t.isHero
+    : kind==='friendly' ? isMine
+    : kind==='enemy' ? (!t.isHero&&!isMine)
+    : kind==='any' ? true : false;
+  if(!legal)return;
+  if(sel.kind==='power')usePower(p,t); else playCard(p,sel.i,t);
+  sel=null; render();
+}
+
+function renderSetup(){
+  const nMin=POOL.filter(c=>c.type==='minion').length;
+  app().innerHTML=`<div class="setup">
+    <h1>MARKET <span>SHARE</span></h1>
+    <div class="rule"></div>
+    <p class="sub">A card battler for the NASDAQ-100 · ${POOL.length} cards · ${nMin} companies · ${LEADERS.length} chief executives<br>
+      30-card deck · 5-card opening hand · $30B Market Cap · Capital ramps 1→10</p>
+    <div class="leaders">${LEADERS.map((l,i)=>`
+      <button class="leader" data-l="${i}">
+        <div class="crest">${crest(l,58)}</div>
+        <div class="body">
+          <div class="nm">${l.nm}</div><div class="co">${l.tk} · ${l.co.toUpperCase()}</div>
+          <div class="row"><b>PASSIVE</b>${l.pass}</div>
+          <div class="row"><b>${l.pw.toUpperCase()} · 2⚡</b>${l.pwtx}</div>
+          <div class="row" style="color:var(--gold-lt)">${l.ind} minions enter with +1/+1</div>
+        </div>
+      </button>`).join('')}</div>
+    <div class="rule"></div>
+    <div class="keys">
+      <b>TAUNT</b> must be attacked first &nbsp;·&nbsp;
+      <b>CHARGE</b> attacks the turn it is played &nbsp;·&nbsp;
+      <b>HEDGED</b> ignores the first damage taken<br>
+      <b>DIVIDEND</b> damage it deals restores your Market Cap &nbsp;·&nbsp;
+      <b>DUAL-LISTED</b> attacks twice each turn &nbsp;·&nbsp;
+      <b>VOLATILE</b> hits hard, costs you on the way out
+    </div>
+  </div>`;
+  document.querySelectorAll('[data-l]').forEach(el=>
+    el.addEventListener('click',()=>start(+el.dataset.l)));
+}
+
+/* ---------- self-check: run with ?test ---------- */
+function selfTest(){
+  const A=(c,m)=>{ if(!c)throw new Error('FAIL: '+m); };
+  A(POOL.filter(c=>c.type==='minion').length>=100,'100+ company cards');
+  A(POOL.length>=120,'120+ total cards');
+  A(new Set(POOL.map(c=>c.nm)).size===POOL.length,'no duplicate card names');
+  A(new Set(POOL.map(c=>c.tk)).size===POOL.length-POOL.filter(c=>c.tk==='EVENT').length+1,
+    'tickers unique among companies');
+  A(LEADERS.length>=12,'12+ leaders');
+  A(new Set(LEADERS.map(l=>l.nm)).size===LEADERS.length,'leaders unique');
+  LEADERS.forEach(l=>{A(GLYPH[l.ind],'leader industry has art: '+l.ind);
+    A(typeof l.power==='function'&&l.pw&&l.pwtx,'leader power wired: '+l.nm);});
+  POOL.forEach(c=>{
+    A(c.cost>=0&&c.cost<=10,'cost range '+c.nm);
+    A(GLYPH[c.ind]||c.ind==='Market','industry has art: '+c.ind);
+    const svg=art(c,60);
+    A(svg.startsWith('<svg')&&svg.includes('</svg>')&&!svg.includes('undefined'),'art renders: '+c.nm);
+    A(!c.tgt||['minion','friendly','enemy','any'].includes(c.tgt),'valid tgt kind '+c.nm);
+  });
+  // art must be deterministic and reasonably distinct per card
+  A(art(POOL[0],60)===art(POOL[0],60),'art is deterministic');
+  A(new Set(POOL.map(c=>hash(c.tk+c.nm))).size>=POOL.length-2,'card sigils near-unique');
+  // brand marks: every path is well-formed, every plate colour is a real hex
+  Object.entries(LOGO).forEach(([tk,ps])=>{
+    A(POOL.some(c=>c.tk===tk),'logo maps to a real card: '+tk);
+    ps.forEach(([f,d,w])=>{
+      A(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(f),'logo colour '+tk);
+      A(/^M[-\d.\s]/i.test(d)&&!/undefined|NaN/.test(d),'logo path '+tk);
+      A(w===undefined||w>0,'logo stroke width '+tk);
+    });
+  });
+  // wordmark plates must clear WCAG AA for large text (3:1) with the colour onBrand picks
+  const lum=hex=>{const n=parseInt(hex.slice(1),16);
+    return [n>>16&255,n>>8&255,n&255].map(v=>{v/=255;return v<=.03928?v/12.92:((v+.055)/1.055)**2.4;})
+      .reduce((a,v,i)=>a+v*[.2126,.7152,.0722][i],0);};
+  const ratio=(a,b)=>{const [x,y]=[lum(a),lum(b)].sort((p,q)=>q-p);return (x+.05)/(y+.05);};
+  Object.entries(WM).forEach(([tk,col])=>{
+    A(/^#[0-9a-f]{6}$/i.test(col),'wordmark colour '+tk);
+    A(ratio(col,onBrand(col))>=3,`wordmark contrast ${tk} (${ratio(col,onBrand(col)).toFixed(2)}:1)`);
+  });
+  const logoed=POOL.filter(c=>LOGO[c.tk]||WM[c.tk]).length;
+  A(logoed>=POOL.filter(c=>c.type==='minion').length*.8,'80%+ of companies carry a brand mark');
+  // the arena renders once, deterministically, and is not empty
+  const sky1=skyline();
+  A(sky1.startsWith('<svg')&&sky1.includes('</svg>')&&!sky1.includes('undefined'),'skyline renders');
+  A((sky1.match(/<rect/g)||[]).length>300,'skyline has towers and windows');
+  // motion queue: attacking a minion must queue a lunge and exactly one damage print
+  G={p:[newPlayer(LEADERS[0]),newPlayer(LEADERS[1])],cur:0,turn:1,over:null};
+  const q1=mk(C('Q','Q',1,3,4,'Tech','common','')); q1.sick=false; G.p[0].board.push(q1);
+  const q2=mk(C('R','R',1,1,9,'Tech','common','')); G.p[1].board.push(q2);
+  FXQ=[]; doAttack(q1,q2);
+  A(FXQ[0].t==='strike'&&FXQ[0].from==='m'+q1.uid,'attack queues a lunge');
+  A(FXQ.filter(e=>e.t==='dmg').length===2,'both sides of a trade print damage');
+  FXQ=[]; dmg({isHero:1,p:G.p[1]},4);
+  A(FXQ.length===1&&FXQ[0].key==='hero1'&&FXQ[0].n===4,'leader damage prints on the leader');
+  FXQ=[]; heal({isHero:1,p:G.p[1]},99);
+  A(FXQ[0].t==='heal'&&FXQ[0].n===4,'overheal prints only what was actually restored');
+  FXQ=[];
+  // deck rules
+  for(let i=0;i<20;i++){
+    const d=buildDeck('Semis');
+    A(d.length===30,'deck is 30');
+    const cnt={}; d.forEach(c=>cnt[c.nm]=(cnt[c.nm]||0)+1);
+    Object.entries(cnt).forEach(([n,k])=>{
+      A(k<=2,`copy limit ${n} (${k}>2)`);
+    });
+  }
+  // combat: trade + hedged + taunt + lethal
+  G={p:[newPlayer(LEADERS[0]),newPlayer(LEADERS[1])],cur:0,turn:1,over:null};
+  const [p0,p1]=G.p;
+  const a=mk(C('T','T',1,3,3,'Tech','common','')); a.sick=false; p0.board.push(a);
+  const b=mk(C('U','U',1,2,5,'Tech','common','')); p1.board.push(b);
+  doAttack(a,b); A(a.hp===1&&b.hp===2,'trade math');
+  const s=mk(C('S','S',1,1,1,'Tech','common','',{kw:['Hedged']})); p1.board.push(s);
+  dmg(s,99); A(s.hp===1&&!s.shield,'hedged absorbs once');
+  dmg(s,1); A(s.hp===0,'hedged only once');
+  const t=mk(C('W','W',1,1,1,'Tech','common','',{kw:['Taunt']})); p1.board.push(t);
+  a.sick=false;a.atks=0;
+  A(doAttack(a,{isHero:1,p:p1})===false,'taunt blocks face');
+  p1.hp=2; p1.board.length=0; a.sick=false;a.atks=0;
+  doAttack(a,{isHero:1,p:p1}); A(G.over===0,'lethal ends game');
+  // fatigue
+  const f=newPlayer(LEADERS[0]); f.deck=[]; draw(f); draw(f);
+  A(f.hp===27,'fatigue 1 then 2');
+  console.log('%c✓ all self-checks passed','color:#26c281;font-weight:700');
+  G=null;
+}
+
+if(location.search.includes('test')){ selfTest(); }
+SKY=skyline();
+document.body.insertAdjacentHTML('afterbegin',`<div id="sky">${SKY}</div><div id="fx"></div>`);
+renderSetup();
+loadPhotos();
+</script>
+</body>
+</html>
