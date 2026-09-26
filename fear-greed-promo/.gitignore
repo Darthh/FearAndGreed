@@ -1,0 +1,15 @@
+node_modules/
+.hyperframes/
+.thumbnails/
+snapshots/
+capture/
+renders/
+assets/*.txt
+!assets/OFL.txt
+!assets/GSAP-LICENSE.txt
+assets/fund-links.json
+assets/fonts/
+references/
+snapshots-*/
+*-result.json
+render.log
