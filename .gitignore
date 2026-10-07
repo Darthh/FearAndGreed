@@ -1,1 +1,8 @@
 .claude/settings.local.json
+
+# Local review captures and temporary deployment copies are not site source.
+/.playwright-mcp/
+/.deploy-*/
+/*.png
+/*.woff2
+/fear-greed-promo/
